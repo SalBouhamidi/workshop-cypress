@@ -31,7 +31,7 @@ function App() {
   }, [dispatch]);
 
   return (
-    <ThemeProvider defaultTheme="dark" storageKey="vite-ui-theme">
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
       {isLoading ? (
         <div className="">
           <div className="flex space-y-6 flex-col justify-center items-center  h-screen ">
