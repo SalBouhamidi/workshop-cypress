@@ -5,9 +5,10 @@ import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { currentUser } from "./store/slices/authSlice";
 import { ThemeProvider } from "@/components/theme-provider";
+import {AppDispatch} from "./store/index"
 
 function App() {
-  const dispatch = useDispatch();
+  const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
