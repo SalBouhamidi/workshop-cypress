@@ -4,13 +4,15 @@ import {
   DeleteMenu,
   EditMenu,
   MenuList,
+  StoreMenu,
   UpdateMenu,
 } from "../controllers/menuController";
 
 const router = express.Router();
 
 router.get("/menu-lists", MenuList);
-router.post("/create-menu", CreateMenu);
-router.get("/edit-menu", EditMenu);
-router.post("/update-menu", UpdateMenu);
-router.post("/delete-menu", DeleteMenu);
+router.get("/create-menu", CreateMenu);
+router.post("/store-menu", StoreMenu);
+router.get("/edit-menu:name", EditMenu);
+router.post("/update-menu:name", UpdateMenu);
+router.post("/delete-menu:name", DeleteMenu);

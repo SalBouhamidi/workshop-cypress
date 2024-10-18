@@ -1,45 +1,30 @@
 const MenuList = () => {
-  return (
-    <>
-      <h1>Menu List</h1>
-    </>
-  );
+  return 
 };
 const CreateMenu = () => {
-  return (
-    <>
-      <h1>Create menu</h1>
-    </>
-  );
+  return 
+};
+
+const StoreMenu = () => {
+  return 
 };
 
 const EditMenu = () => {
-  return (
-    <>
-      <h1>Edit menu</h1>
-    </>
-  );
+  return 
 };
 
 const UpdateMenu = () => {
-  return (
-    <>
-      <h1>Update Menu</h1>
-    </>
-  );
+  return 
 };
 
 const DeleteMenu = () => {
-  return (
-    <>
-      <h1>Delete Menu</h1>
-    </>
-  );
+  return 
 };
 
 module.exports = {
   MenuList,
   CreateMenu,
+  StoreMenu,
   EditMenu,
   UpdateMenu,
   DeleteMenu,
