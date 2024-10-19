@@ -1,20 +1,20 @@
 import express from "express";
 import {
-  CreateMenu,
-  DeleteMenu,
-  EditMenu,
-  MenuList,
+  Menus,
+  ShowMenu,
+  ShowMenuItem,
   StoreMenu,
   UpdateMenu,
+  DeleteMenu,
 } from "../controllers/menuController.js";
 
 const router = express.Router();
 
-router.get("/menu-lists", MenuList);
-router.get("/create-menu", CreateMenu);
+router.get("/", Menus);
+router.get("/:restaurantName/menu", ShowMenu);
+router.get("/:restaurantName/:itemName", ShowMenuItem);
 router.post("/store-menu", StoreMenu);
-router.get("/edit-menu:name", EditMenu);
-router.post("/update-menu:name", UpdateMenu);
-router.post("/delete-menu:name", DeleteMenu);
+router.post("/update-menu/id", UpdateMenu);
+router.post("/delete-menu/:id", DeleteMenu);
 
 export default router;
