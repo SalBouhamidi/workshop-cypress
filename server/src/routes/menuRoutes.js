@@ -14,7 +14,7 @@ router.get("/", Menus);
 router.get("/:restaurantName/menu", ShowMenu);
 router.get("/:restaurantName/:itemName", ShowMenuItem);
 router.post("/store-menu", StoreMenu);
-router.post("/update-menu/id", UpdateMenu);
-router.post("/delete-menu/:id", DeleteMenu);
+router.post("/:restaurantName/update-menu", UpdateMenu);
+router.post("/:restaurantName/delete-menu/", DeleteMenu);
 
 export default router;

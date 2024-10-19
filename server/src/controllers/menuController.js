@@ -1,6 +1,8 @@
 import mongoose from "mongoose";
 import Menu from "../models/menuModel.js";
 import Restaurant from "../models/restaurantModel.js";
+import { validateStoreMenu } from "../validations/storeMenuSchema.js";
+import { validateUpdateMenu } from "../validations/updateMenuSchema.js";
 
 // displaying all the menus
 const Menus = async (req, res) => {
@@ -84,24 +86,109 @@ const ShowMenuItem = async (req, res) => {
 
 // storing new menu
 const StoreMenu = async (req, res) => {
-  return res.json("store menu");
+  try {
+    const { restaurantId, items } = req.body;
+
+    // Validate input
+    const { error } = validateStoreMenu(req.body);
+    if (error) {
+      return res
+        .status(400)
+        .json({ message: "Validation error", details: error.details });
+    }
+
+    // Checking if a menu already exists for the restaurant
+    const existingMenu = await Menu.findOne({ restaurantId });
+    if (existingMenu) {
+      return res
+        .status(400)
+        .json({ message: "This restaurant already has a menu." });
+    }
+
+    // Creating a new menu if no existing menu found
+    const newMenu = new Menu({
+      restaurantId,
+      items,
+    });
+
+    const savedMenu = await newMenu.save();
+
+    return res.status(201).json(savedMenu); // Menu created
+  } catch (error) {
+    console.error("Error storing menu:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
 };
 
-// updating menu 
-const UpdateMenu = () => {
-  return;
+// updating menu
+const UpdateMenu = async (req, res) => {
+  try {
+    const { restaurantName } = req.params;
+    const { items } = req.body;
+
+    // Validate data
+    const { error } = validateUpdateMenu(req.body);
+    if (error) {
+      return res
+        .status(400)
+        .json({ message: "Validation error", details: error.details });
+    }
+
+    // Finding the restaurant by name
+    const restaurant = await Restaurant.findOne({ name: restaurantName });
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found." });
+    }
+
+    // Finding the menu associated with the restaurant
+    const menu = await Menu.findOne({ restaurantId: restaurant._id });
+    if (!menu) {
+      return res
+        .status(404)
+        .json({ message: "Menu not found for this restaurant." });
+    }
+
+    // Updating the menu items
+    menu.items = items;
+    menu.updatedAt = Date.now();
+
+    const updatedMenu = await menu.save();
+
+    return res.status(200).json(updatedMenu);
+  } catch (error) {
+    console.error("Error updating menu:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
 };
 
 // deleting menu
-const DeleteMenu = () => {
-  return;
+const DeleteMenu = async (req, res) => {
+  try {
+    const { restaurantName } = req.params;
+
+    // Finding the restaurant by its name
+    const restaurant = await Restaurant.findOne({ name: restaurantName });
+
+    if (!restaurant) {
+      return res.status(404).json({ message: "Restaurant not found." });
+    }
+
+    // finding and delete the menu
+    const deletedMenu = await Menu.findOneAndDelete({
+      restaurantId: restaurant._id,
+    });
+
+    if (!deletedMenu) {
+      return res
+        .status(404)
+        .json({ message: "Menu not found for this restaurant." });
+    }
+
+    return res.status(200).json({ message: "Menu deleted successfully." });
+  } catch (error) {
+    console.error("Error deleting menu:", error);
+    return res.status(500).json({ message: "Internal server error." });
+  }
 };
 
-export {
-  Menus,
-  ShowMenu,
-  ShowMenuItem,
-  StoreMenu,
-  UpdateMenu,
-  DeleteMenu,
-};
+export { Menus, ShowMenu, ShowMenuItem, StoreMenu, UpdateMenu, DeleteMenu };
