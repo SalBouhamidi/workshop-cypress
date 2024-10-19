@@ -13,7 +13,9 @@ const router = express.Router();
 router.get("/", Menus);
 router.get("/:restaurantName/menu", ShowMenu);
 router.get("/:restaurantName/:itemName", ShowMenuItem);
+// create route
 router.post("/store-menu", StoreMenu);
+// update route
 router.post("/:restaurantName/update-menu", UpdateMenu);
 router.post("/:restaurantName/delete-menu/", DeleteMenu);
 
