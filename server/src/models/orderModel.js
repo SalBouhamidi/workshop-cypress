@@ -1,3 +1,6 @@
+import mongoose from "mongoose";
+const { Schema, model } = mongoose;
+
 const orderSchema = new Schema({
   clientId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   restaurantId: {
@@ -22,4 +25,4 @@ const orderSchema = new Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-module.exports = model("Order", orderSchema);
+export default model("Order", orderSchema);

@@ -6,7 +6,7 @@ import {
   MenuList,
   StoreMenu,
   UpdateMenu,
-} from "../controllers/menuController";
+} from "../controllers/menuController.js";
 
 const router = express.Router();
 
@@ -16,3 +16,5 @@ router.post("/store-menu", StoreMenu);
 router.get("/edit-menu:name", EditMenu);
 router.post("/update-menu:name", UpdateMenu);
 router.post("/delete-menu:name", DeleteMenu);
+
+export default router;

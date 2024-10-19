@@ -1,27 +1,31 @@
+import fs from 'fs';
+import path from 'path';
+import Menu from "../models/menuModel.js";
+
 const MenuList = () => {
-  return 
+  return;
 };
 const CreateMenu = () => {
-  return 
+  return;
 };
 
-const StoreMenu = () => {
-  return 
+const StoreMenu = async (req, res) => {
+  return res.json("good");
 };
 
 const EditMenu = () => {
-  return 
+  return;
 };
 
 const UpdateMenu = () => {
-  return 
+  return;
 };
 
 const DeleteMenu = () => {
-  return 
+  return;
 };
 
-module.exports = {
+export {
   MenuList,
   CreateMenu,
   StoreMenu,
