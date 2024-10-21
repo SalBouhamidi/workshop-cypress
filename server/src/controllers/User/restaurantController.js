@@ -1,5 +1,5 @@
-const {Restaurant} = require('../models/restaurantModel');
-const {Category} = require('../models/categoryModel');
+const {Restaurant} = require('../../models/restaurantModel');
+const {Category} = require('../../models/categoryModel');
 class restaurantController{
     async getAllRestaurant(){
 
@@ -22,7 +22,6 @@ class restaurantController{
                 categoryId = category._id; 
               }
             }
-        
             if (categoryId) {
               query.categoryIds = categoryId;
             }
