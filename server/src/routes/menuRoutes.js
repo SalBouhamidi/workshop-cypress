@@ -7,25 +7,35 @@ import {
   UpdateMenu,
   DeleteMenu,
 } from "../controllers/menuController.js";
+import { authMiddleware, managerMiddleware } from "../middlewares/menuMiddleware.js";
 
 const router = express.Router();
 
-// display all the menus route
-router.get("/", Menus);
+// Public Routes (Accessible without authentication)
+router.get("/", Menus); // Display all menus
+router.get("/:restaurantName/menu", ShowMenu); // Display menu by restaurant
+router.get("/:restaurantName/:itemName", ShowMenuItem); // Display menu item by restaurant
 
-// display menu by restaurant route
-router.get("/:restaurantName/menu", ShowMenu);
+// Protected Routes (Only Managers can access)
+router.post(
+  "/store-menu",
+  authMiddleware,
+  managerMiddleware,
+  StoreMenu
+); // Create a new menu
 
-// display menu item by restaurant route
-router.get("/:restaurantName/:itemName", ShowMenuItem);
+router.post(
+  "/:restaurantName/update-menu",
+  authMiddleware,
+  managerMiddleware,
+  UpdateMenu
+); // Update a menu
 
-// create route
-router.post("/store-menu", StoreMenu);
-
-// update route
-router.post("/:restaurantName/update-menu", UpdateMenu);
-
-// delete route
-router.post("/:restaurantName/delete-menu/", DeleteMenu);
+router.post(
+  "/:restaurantName/delete-menu",
+  authMiddleware,
+  managerMiddleware,
+  DeleteMenu
+); // Delete a menu
 
 export default router;
