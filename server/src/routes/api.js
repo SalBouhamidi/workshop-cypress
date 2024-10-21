@@ -1,16 +1,16 @@
-const express = require('express');
+// const express = require('express');
+import express from "express"
 const router = express.Router();
-const Restaurant = require('../controllers/User/restaurantController')
-
+import restaurantController from "../controllers/User/restaurantController.js";
 
 
 //restaurant Search : 
-router.get('/search', Restaurant.search);
+router.get('/search', restaurantController.search);
 
 
 
 
-module.exports = router
+export default router;
 
 
 
