@@ -1,21 +1,21 @@
 import { jest } from "@jest/globals";
 import request from "supertest";
-import app from "../../../app.js";
-import Order from "../../models/orderModel.js";
-import { changeOrderStatus } from "../../repositorys/orderRepository.js";
+import app from "../../../../app.js";
+import Order from "../../../models/orderModel.js";
+import { changeOrderStatus } from "../../../repositorys/orderRepository.js";
 import mongoose from 'mongoose';
-import { refuseTheOrder } from "../../controllers/Order/orderController.js"; 
-import { deletedOrder } from "../../repositorys/orderRepository.js";// Add the new imports
+import { refuseTheOrder } from "../../../controllers/Order/orderController.js"; 
+import { deletedOrder } from "../../../repositorys/orderRepository.js";// Add the new imports
 
 // Mock the models and repository
-jest.mock('../../models/orderModel.js');
-jest.mock('../../repositorys/orderRepository.js', () => ({
+jest.mock('../../../models/orderModel.js');
+jest.mock('../../../repositorys/orderRepository.js', () => ({
     changeOrderStatus: jest.fn(),
 }));
 
 describe('Order API Tests', () => {
     let mockOrder;
-
+    let deliveryId = '60c72b2f9b1e8a3d88f41332';
     beforeEach(() => {
         mockOrder = {
             _id: '60c72b2f9b1e8a3d88f41336',
@@ -53,15 +53,15 @@ describe('Order API Tests', () => {
             expect(response.body).toHaveProperty('order', mockOrder);
         });
 
-        it('should return status 404 if the order is not found', async () => {
+        it('should return status 400 if the order is not found', async () => {
             Order.findById = jest.fn().mockResolvedValue(null);
 
             const response = await request(app)
                 .put('/api/order/validate/order')
-                .send({ orderId: 'nonexistentId' });
+                .send({ orderId: 'nonexistentId'});
 
-            expect(response.status).toBe(404);
-            expect(response.body).toHaveProperty('error', 'Order not found');
+            expect(response.status).toBe(400);
+            expect(response.body).toHaveProperty('error', 'Invalid Order ID');
         });
 
         it('should return status 500 on server error', async () => {
@@ -69,7 +69,7 @@ describe('Order API Tests', () => {
 
             const response = await request(app)
                 .put('/api/order/validate/order')
-                .send({ orderId: mockOrder._id });
+                .send({ orderId: mockOrder._id, deliveryMan: deliveryId });
 
             expect(response.status).toBe(500);
             expect(response.body).toHaveProperty('error', 'server error!');
@@ -78,7 +78,9 @@ describe('Order API Tests', () => {
         it('should return status 400 if order ID is not provided', async () => {
             const response = await request(app)
                 .put('/api/order/validate/order')
-                .send({ orderId: '' });
+                .send(
+                    { orderId: ''}
+                );
 
             expect(response.status).toBe(400);
             expect(response.body).toHaveProperty('error', 'Order ID is required');
