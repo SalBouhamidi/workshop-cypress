@@ -1,7 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import connectDB from "./src/config/dbConfig.js";
-import { authRoutes } from "./src/routes/index.js";
+import { authRoutes, orderRouter } from "./src/routes/index.js";
 import cors from "cors";
 import router from "./src/routes/api.js";
 
@@ -40,6 +40,7 @@ app.get("/test", async (req, res) => {
 // Middleware
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use("/api/order", orderRouter)
 app.use("/api", router)
 
 // Error handling middleware
@@ -53,3 +54,5 @@ app.listen(port, () => {
   console.log("Server is running on port: " + port);
 });
 connectDB();
+
+export default app;
