@@ -1,5 +1,5 @@
-import { getAllOrders, findOrderById, changeOrderStatus, deletedOrder } from "../repositorys/orderRepository.js";
-import { createDelivery } from "../repositorys/deliveryRepository.js"
+import { getAllOrders, findOrderById, changeOrderStatus, deletedOrder } from "../../repositorys/orderRepository.js";
+import { createDelivery } from "../../repositorys/deliveryRepository.js"
 
 
 export const getOders = async (req, res) => {
