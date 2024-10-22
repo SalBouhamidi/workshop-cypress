@@ -1,3 +1,5 @@
+import { model, Schema } from "mongoose";
+
 const menuSchema = new Schema({
   restaurantId: {
     type: Schema.Types.ObjectId,
@@ -16,4 +18,4 @@ const menuSchema = new Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-module.exports = model("Menu", menuSchema);
+export default model("Menu", menuSchema);

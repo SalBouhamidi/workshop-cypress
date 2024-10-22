@@ -1,16 +1,13 @@
-const {Restaurant} = require('../../models/restaurantModel');
-const {Category} = require('../../models/categoryModel');
-class restaurantController{
-    async getAllRestaurant(){
+import Restaurant from '../../models/restaurantModel.js';
+import Category from '../../models/categoryModel.js';
 
-    }
+
+class restaurantController{
+
 
     async search(req, res){
         try {
             const { name, cuisine, city } = req.query;
-            // if (!name) {
-            //   return res.status(400).json({ message: 'please write the name of the restaurant you are looking for' });
-            // }
             const query = {
                 ...(name && { name: { $regex: name, $options: 'i' } }),
                 ...(city && { 'location.city': city }),
@@ -19,15 +16,18 @@ class restaurantController{
             if (cuisine) {
               const category = await Category.findOne({ name: { $regex: cuisine, $options: 'i' } });
               if (category) {
-                categoryId = category._id; 
+                categoryId = category._id;
               }
             }
             if (categoryId) {
               query.categoryIds = categoryId;
             }
             const restaurants = await Restaurant.find(query);
-            res.status(200).json(restaurants);
-
+            if(restaurants.length > 0){
+              res.status(200).json(restaurants);
+            }else{
+              res.status(200).json({"message": "There's no restaurants available"});
+            }
           } catch (error) {
             console.error(error);
             res.status(500).json({ error: 'smth bad happend' });
@@ -35,4 +35,4 @@ class restaurantController{
     }
 }
 
-module.exports = new restaurantController;
+export default new restaurantController();

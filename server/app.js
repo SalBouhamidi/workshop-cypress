@@ -3,6 +3,10 @@ import "dotenv/config";
 import connectDB from "./src/config/dbConfig.js";
 import { authRoutes } from "./src/routes/index.js";
 import cors from "cors";
+import router from "./src/routes/api.js";
+
+
+
 
 const app = express();
 
@@ -15,6 +19,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization"],
   })
 );
+
 
 app.get("/test", async (req, res) => {
   res.json({
@@ -35,6 +40,7 @@ app.get("/test", async (req, res) => {
 // Middleware
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+app.use("/api", router)
 
 // Error handling middleware
 app.use((err, req, res, next) => {

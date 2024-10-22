@@ -1,3 +1,5 @@
+import { model, Schema } from "mongoose";
+
 const restaurantSchema = new Schema({
   name: { type: String, required: true },
   location: {
@@ -10,4 +12,6 @@ const restaurantSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = model("Restaurant", restaurantSchema);
+
+export default model("Restaurant", restaurantSchema);
+

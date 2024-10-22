@@ -1,3 +1,5 @@
+import { model, Schema } from "mongoose";
+
 const deliverySchema = new Schema({
   orderId: { type: Schema.Types.ObjectId, ref: "Order", required: true },
   deliveryAgentId: { type: Schema.Types.ObjectId, ref: "User", required: true },
@@ -9,4 +11,4 @@ const deliverySchema = new Schema({
   deliveredAt: { type: Date },
 });
 
-module.exports = model("Delivery", deliverySchema);
+export default model("Delivery", deliverySchema);
