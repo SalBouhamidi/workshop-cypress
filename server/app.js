@@ -1,7 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import connectDB from "./src/config/dbConfig.js";
-import { authRoutes, orderRouter } from "./src/routes/index.js";
+import { authRoutes, orderRouter, deliveryRouter } from "./src/routes/index.js";
 import cors from "cors";
 import router from "./src/routes/api.js";
 
@@ -41,6 +41,7 @@ app.get("/test", async (req, res) => {
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/order", orderRouter)
+app.use("/api/delivery", deliveryRouter)
 app.use("/api", router)
 
 // Error handling middleware
