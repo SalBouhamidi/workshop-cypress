@@ -7,9 +7,7 @@ export const confirmCommand = async (req, res) => {
         return res.status(200).json({
             message: "Command confirmed"
         })
-    }catch(err){
-        console.log(err);
-        
+    }catch(err){        
         if(err.status){
             return res.status(err.status).json({
                 error: err.message
@@ -30,7 +28,7 @@ export const fetchTheCommands = async (req, res) => {
     }catch(err){
         if(err.status){
             return res.status(err.status).json({
-                error: err.status
+                error: err.message
             })
         }
         res.status(500).json({

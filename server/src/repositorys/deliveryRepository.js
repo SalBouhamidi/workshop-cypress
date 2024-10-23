@@ -14,20 +14,20 @@ export const createDelivery = async (order, deliveryMan) => {
 
 export const changeDeliveryStatus = async (deliveryId, status) => {
     try{
-        const chnagedDelivery = await Delivery.findById({ _id: deliveryId});
-        if(!chnagedDelivery){
+        const changedDelivery = await Delivery.findById({ _id: deliveryId});        
+        if(!changedDelivery){
             const error = new Error('Command not found');
             error.status = 404
             throw error;
         }
-        chnagedDelivery.status = status;
-        await chnagedDelivery.save()
+        changedDelivery.status = status;
+        await changedDelivery.save()
     }catch(err){
         if (err.name === 'CastError') {
             const error = new Error('Invalid Command ID format');
             error.status = 400;
             throw error;
-        }
+        }   
         throw err
     }
 }
