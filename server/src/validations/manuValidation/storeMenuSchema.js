@@ -23,6 +23,9 @@ const menuSchema = Joi.object({
           'any.required': 'Price is required.',
         }),
         available: Joi.boolean().optional(),
+        image: Joi.string().uri().optional().messages({
+          'string.uri': 'Image must be a valid URL.',
+        }),
       })
     )
     .min(1)
