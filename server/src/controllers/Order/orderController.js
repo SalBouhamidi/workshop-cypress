@@ -1,5 +1,6 @@
 import { getAllOrders, findOrderById, changeOrderStatus, deletedOrder } from "../../repositorys/orderRepository.js";
 import { createDelivery } from "../../repositorys/deliveryRepository.js"
+import { sendNotification } from "../../services/notificationService.js";
 
 
 export const getOders = async (req, res) => {
@@ -23,6 +24,7 @@ const orderToDeliveryStep = async (orderId, deliveryMan) => {
             error.status = 401
             throw error;
         }
+        return delivery;
     }catch(err){
         throw err
     }
@@ -33,7 +35,8 @@ export const validateTheOrder = async (req, res) => {
         const { orderId, deliveryMan } = req.body;
         const order = await findOrderById(orderId);
         await changeOrderStatus(order, 'in_progress');
-        await orderToDeliveryStep(orderId, deliveryMan);
+        const delivery = await orderToDeliveryStep(orderId, deliveryMan);
+        await sendNotification(delivery._id, 'New command has asigned to you', 'new_order');
         return res.status(200).json({
             message: 'Order updated',
             order: order
