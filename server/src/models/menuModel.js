@@ -7,7 +7,7 @@ const menuItemSchema = new Schema(
     description: { type: String, required: true },
     price: { type: Number, required: true, min: 0 },
     available: { type: Boolean, default: true },
-    image: { type: String, default: "default-placeholder.png" },
+    images: { type: [String], default: ["default-placeholder.png"] },
   },
   { timestamps: true }
 );
