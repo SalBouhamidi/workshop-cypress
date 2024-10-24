@@ -1,9 +1,9 @@
-import { model, Schema } from "mongoose";
+import mongoose from "mongoose";
 
-const orderSchema = new Schema({
-  clientId: { type: Schema.Types.ObjectId, ref: "User", required: true },
+const orderSchema = new mongoose.Schema({
+  clientId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
   restaurantId: {
-    type: Schema.Types.ObjectId,
+    type: mongoose.Schema.Types.ObjectId,
     ref: "Restaurant",
     required: true,
   },
@@ -24,4 +24,4 @@ const orderSchema = new Schema({
   updatedAt: { type: Date, default: Date.now },
 });
 
-export default model("Order", orderSchema);
+export default mongoose.model("Order", orderSchema);
