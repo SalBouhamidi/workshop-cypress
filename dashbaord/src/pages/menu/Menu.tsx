@@ -189,16 +189,13 @@ const Menu = () => {
         setLoading(true);
         try {
             const response = await axios.get(`http://localhost:3000/api/menus?page=${page}&limit=${itemsPerPage}`);
+            // console.log('response:', response.data);
             setMenus(response.data.menus);
             setCategories(response.data.categories);
             setCurrentPage(response.data.pagination.currentPage);
             setTotalPages(response.data.pagination.totalPages);
             setItemsPerPage(response.data.pagination.itemsPerPage);
-
-            // Calculate total items across all menus
-            const totalItems = response.data.menus.reduce((sum, menu) => sum + menu.items.length, 0);
-            setTotalItems(totalItems);
-
+            setTotalItems(response.data.pagination.totalItems);
             setError(null);
         } catch (error) {
             setError('Failed to fetch menus and categories.');
@@ -207,11 +204,12 @@ const Menu = () => {
             setLoading(false);
         }
     };
+
     useEffect(() => {
         fetchMenus();
     }, []);
 
-    const handlePageChange = (newPage) => {
+    const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= totalPages) {
             setCurrentPage(newPage);
             fetchMenus(newPage);
@@ -313,17 +311,17 @@ const Menu = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {menus.map((menu, index) =>
+                                {menus.map((menu, menuIndex) =>
                                     menu.items.map((item, itemIndex) => (
-                                        <tr key={`${index}-${itemIndex}`} className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <tr key={`${menuIndex}-${itemIndex}`} className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
                                             <td className="w-4 px-4 py-3">
                                                 <div className="flex items-center">
                                                     <input
-                                                        id={`checkbox-table-search-${index}-${itemIndex}`}
+                                                        id={`checkbox-table-search-${menuIndex}-${itemIndex}`}
                                                         type="checkbox"
                                                         className="w-4 h-4 bg-gray-100 border-gray-300 rounded text-table_primany-600 focus:ring-table_primany-500 dark:focus:ring-table_primany-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 table-checkbox"
                                                     />
-                                                    <label htmlFor={`checkbox-table-search-${index}-${itemIndex}`} className="sr-only">
+                                                    <label htmlFor={`checkbox-table-search-${menuIndex}-${itemIndex}`} className="sr-only">
                                                         Select
                                                     </label>
                                                 </div>
@@ -357,8 +355,8 @@ const Menu = () => {
                                                 </span>
                                             </td>
                                             <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.price}</td>
-                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.restaurantId.name}</td>
-                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.updatedAt}</td>
+                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.restaurantName}</td>
+                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.updatedAt}</td>
                                         </tr>
                                     ))
                                 )}
@@ -369,7 +367,7 @@ const Menu = () => {
                         <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
                             Showing
                             <span className="font-semibold text-gray-900 dark:text-white">
-                                {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalItems)}{' '}
+                                {Math.min((currentPage - 1) * itemsPerPage + 1, totalItems)}-{Math.min(currentPage * itemsPerPage, totalItems)}{' '}
                             </span>
                             of
                             <span className="font-semibold text-gray-900 dark:text-white">{totalItems}</span>
@@ -381,7 +379,7 @@ const Menu = () => {
                                     disabled={currentPage === 1}
                                     className="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <span className="sr-only">Previous</span>
+                                    <span className="sr-only">Previous </span>
                                     <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path
                                             fillRule="evenodd"
@@ -405,7 +403,7 @@ const Menu = () => {
                                     disabled={currentPage === totalPages}
                                     className="flex items-center justify-center h-full py-1.5 px-3 leading-tight text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <span className="sr-only">Next</span>
+                                    <span className="sr-only">Next </span>
                                     <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path
                                             fillRule="evenodd"

@@ -7,36 +7,61 @@ import { validateUpdateMenu } from "../../validations/manuValidation/updateMenuS
 
 import { uploadImage } from "../../services/cloudinaryService.js";
 
-// Displaying all the menus
-// Fetching all menus and categories
+// Fetching all menus with categories
 const Menus = async (req, res) => {
   try {
     const page = parseInt(req.query.page) || 1;
     const limit = parseInt(req.query.limit) || 10;
     const skip = (page - 1) * limit;
 
-    // Fetching menus with pagination
-    const menusQuery = Menu.find()
-      .populate("restaurantId", "name categoryIds")
-      .skip(skip)
-      .limit(limit)
-      .lean();
+    // Fetching menus with pagination applied to items
+    const menusQuery = Menu.aggregate([
+      { $unwind: "$items" },
+      { $skip: skip },
+      { $limit: limit },
+      {
+        $group: {
+          _id: "$_id",
+          restaurantId: { $first: "$restaurantId" },
+          items: { $push: "$items" }
+        }
+      },
+      {
+        $lookup: {
+          from: "restaurants",
+          localField: "restaurantId",
+          foreignField: "_id",
+          as: "restaurantId"
+        }
+      },
+      { $unwind: "$restaurantId" },
+      {
+        $project: {
+          "restaurantId.name": 1,
+          "restaurantId.categoryIds": 1,
+          items: 1
+        }
+      }
+    ]);
 
     // Fetching categories
     const categoriesQuery = Category.find().lean();
 
-    // Fetching total count of menus
-    const totalCountQuery = Menu.countDocuments();
+    // Fetching total count of items across all menus
+    const totalCountQuery = Menu.aggregate([
+      { $unwind: "$items" },
+      { $count: "totalItems" }
+    ]);
 
     // Execute all queries in parallel
-    const [menus, categories, totalCount] = await Promise.all([
+    const [menus, categories, [{ totalItems } = { totalItems: 0 }]] = await Promise.all([
       menusQuery,
       categoriesQuery,
       totalCountQuery
     ]);
 
     // Calculate total pages
-    const totalPages = Math.ceil(totalCount / limit);
+    const totalPages = Math.ceil(totalItems / limit);
 
     // Prepare response object
     const response = {
@@ -45,14 +70,14 @@ const Menus = async (req, res) => {
       pagination: {
         currentPage: page,
         totalPages,
-        totalItems: totalCount,
+        totalItems,
         itemsPerPage: limit
       }
     };
 
     // If no menus are found
     if (menus.length === 0) {
-      response.message = "No menus found for this page.";
+      response.message = "No menu items found for this page.";
     }
 
     // If no categories are found
@@ -143,7 +168,6 @@ const ShowMenuItem = async (req, res) => {
 
 // Storing new menu
 const StoreMenu = async (req, res) => {
-  console.log(req.body);
   try {
     const { restaurantId, name, description, price, available, images } =
       req.body;
