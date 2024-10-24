@@ -1,4 +1,5 @@
-import { model, Schema } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, model } = mongoose;
 
 const menuSchema = new Schema({
   restaurantId: {
