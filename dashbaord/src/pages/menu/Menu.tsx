@@ -1,8 +1,12 @@
 import { useState, useEffect } from 'react';
 import axios from 'axios';
+import * as Yup from 'yup';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
+import imageCompression from 'browser-image-compression';
 
 interface Image {
-    image: string;
+    data: string;
 }
 
 interface MenuItem {
@@ -20,7 +24,7 @@ interface Category {
 
 interface Restaurant {
     name: string;
-    categoryIds: Category[];
+    categoryIds: string[];
 }
 
 interface Menu {
@@ -29,18 +33,50 @@ interface Menu {
     updatedAt: string;
 }
 
+const validationSchema = Yup.object().shape({
+    restaurantId: Yup.string().required('Restaurant is required'),
+    name: Yup.string().required('Name is required'),
+    description: Yup.string().required('Description is required'),
+    price: Yup.number().required('Price is required').positive('Price must be positive'),
+    available: Yup.boolean().required('Availability is required'),
+    images: Yup.array()
+        .of(
+            Yup.object().shape({
+                data: Yup.string().required('Image is required'),
+            })
+        )
+        .min(1, 'At least one image is required')
+        .max(5, 'You can upload up to 5 images only')
+        .required('Images are required'),
+});
+
 const Menu = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAllChecked, setIsAllChecked] = useState(false);
 
     const [menus, setMenus] = useState<Menu[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
+    const [restaurantId, setRestaurantId] = useState<string>('');
+    const [newItem, setNewItem] = useState<MenuItem>({
+        name: '',
+        description: '',
+        price: 0,
+        available: false,
+        images: [],
+    });
+
     const [error, setError] = useState<string | null>(null);
+    const [errors, setErrors] = useState({});
     const [loading, setLoading] = useState<boolean>(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(0);
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const [totalItems, setTotalItems] = useState(0);
 
     const toggleModal = () => {
         setIsModalOpen(!isModalOpen);
-        console.log('toggled');
     };
+
     const handleSelectAll = (e) => {
         const checked = e.target.checked;
         setIsAllChecked(checked);
@@ -50,32 +86,137 @@ const Menu = () => {
             checkbox.checked = checked;
         });
     };
-    menus.map((menu, index) => {
-        if (menu.restaurantId?.categoryIds) {
-            menu.restaurantId.categoryIds.forEach((category) => {
-                console.log(category.name);
-            });
-        } else {
-            console.log(`Menu at index ${index} has no categories`, menu);
-        }
-    });
 
-    // Fetch all menus when the component is mounted
-    useEffect(() => {
-        const fetchMenus = async () => {
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setNewItem((prev) => ({
+            ...prev,
+            [name]: name === 'available' ? value === 'true' : value,
+        }));
+    };
+
+    const handleSelectChange = (e) => {
+        const { value } = e.target;
+        setRestaurantId(value);
+    };
+
+    const handleImageChange = async (e) => {
+        const files = Array.from(e.target.files);
+        const imageFiles = files.filter((file) => file instanceof Blob);
+
+        const compressionOptions = {
+            maxSizeMB: 0.5,
+            maxWidthOrHeight: 1024,
+            useWebWorker: true,
+        };
+
+        const compressAndConvertImage = async (file) => {
             try {
-                const response = await axios.get('http://localhost:3000/api/menus');
-                console.log("Menus fetched:", response.data);
-                setMenus(response.data);
-                setLoading(false);
+                const compressedFile = await imageCompression(file, compressionOptions);
+                const base64 = await convertBlobToBase64(compressedFile);
+                return { data: base64 };
             } catch (error) {
-                setError('Failed to fetch menus. Please try again later.');
-                setLoading(false);
+                console.error('Error compressing image:', error);
+                return null;
             }
         };
 
+        const imagePromises = imageFiles.map(compressAndConvertImage);
+
+        const images = await Promise.all(imagePromises);
+        setNewItem((prev) => ({ ...prev, images: images.filter(Boolean) }));
+    };
+
+    const convertBlobToBase64 = (blob) => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    };
+
+    // create new menu
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setErrors({});
+
+        try {
+            await validationSchema.validate({ ...newItem, restaurantId }, { abortEarly: false });
+
+            const payload = {
+                restaurantId,
+                name: newItem.name,
+                description: newItem.description,
+                price: parseFloat(newItem.price),
+                available: newItem.available,
+            };
+
+            const images = newItem.images.map((img) => img.data);
+
+            const response = await axios.post('http://localhost:3000/api/menus/store-menu', { ...payload, images });
+
+            console.log('Menu saved:', response.data);
+            toast.success('Menu item added successfully!');
+            setNewItem({
+                name: '',
+                description: '',
+                price: 0,
+                available: false,
+                images: [],
+            });
+            fetchMenus();
+            toggleModal();
+        } catch (error) {
+            if (error instanceof Yup.ValidationError) {
+                const formErrors = error.inner.reduce((acc, curr) => {
+                    acc[curr.path] = curr.message;
+                    return acc;
+                }, {});
+                setErrors(formErrors);
+                Object.values(formErrors).forEach((errMessage) => {
+                    toast.error(errMessage);
+                });
+            } else {
+                console.error('Error saving menu:', error);
+                toast.error('Failed to save menu.');
+            }
+        }
+    };
+
+    // Fetch all menus when the component is mounted
+    const fetchMenus = async (page = 1) => {
+        setLoading(true);
+        try {
+            const response = await axios.get(`http://localhost:3000/api/menus?page=${page}&limit=${itemsPerPage}`);
+            setMenus(response.data.menus);
+            setCategories(response.data.categories);
+            setCurrentPage(response.data.pagination.currentPage);
+            setTotalPages(response.data.pagination.totalPages);
+            setItemsPerPage(response.data.pagination.itemsPerPage);
+
+            // Calculate total items across all menus
+            const totalItems = response.data.menus.reduce((sum, menu) => sum + menu.items.length, 0);
+            setTotalItems(totalItems);
+
+            setError(null);
+        } catch (error) {
+            setError('Failed to fetch menus and categories.');
+            console.error('Error fetching menus:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+    useEffect(() => {
         fetchMenus();
     }, []);
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+            fetchMenus(newPage);
+        }
+    };
 
     if (loading) {
         return <div>Loading menus...</div>;
@@ -91,8 +232,12 @@ const Menu = () => {
                     <div className="flex flex-col px-4 py-3 space-y-3 lg:flex-row lg:items-center lg:justify-between lg:space-y-0 lg:space-x-4">
                         <div className="flex items-center flex-1 space-x-4">
                             <h5>
-                                <span className="text-gray-500">All Manus:</span>
+                                <span className="text-gray-500">All Menus:</span>
                                 <span className="dark:text-white pl-1.5">{menus.length}</span>
+                            </h5>
+                            <h5>
+                                <span className="text-gray-500">All menu items:</span>
+                                <span className="dark:text-white pl-1.5">{totalItems}</span>
                             </h5>
                         </div>
                         <div className="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
@@ -168,125 +313,107 @@ const Menu = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                {menus.map((menu, index) => (
-                                    <tr className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                        <td className="w-4 px-4 py-3">
-                                            <div className="flex items-center">
-                                                <input
-                                                    id="checkbox-table-search-1"
-                                                    type="checkbox"
-                                                    className="w-4 h-4 bg-gray-100 border-gray-300 rounded text-table_primany-600 focus:ring-table_primany-500 dark:focus:ring-table_primany-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 table-checkbox"
-                                                />
-                                                <label htmlFor="checkbox-table-search-1" className="sr-only">
-                                                    Select
-                                                </label>
-                                            </div>
-                                        </td>
-                                        <th scope="row" className="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                            <img src={menu.items[0].images[0]} alt={menu.items[0].name} className="w-auto h-8 mr-3" />
-                                            {menu.items[0].name}
-                                        </th>
-                                        <td className="px-4 py-2">
-                                            {/* {menu.restaurantId.categoryIds.map((category) => (
+                                {menus.map((menu, index) =>
+                                    menu.items.map((item, itemIndex) => (
+                                        <tr key={`${index}-${itemIndex}`} className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                            <td className="w-4 px-4 py-3">
+                                                <div className="flex items-center">
+                                                    <input
+                                                        id={`checkbox-table-search-${index}-${itemIndex}`}
+                                                        type="checkbox"
+                                                        className="w-4 h-4 bg-gray-100 border-gray-300 rounded text-table_primany-600 focus:ring-table_primany-500 dark:focus:ring-table_primany-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 table-checkbox"
+                                                    />
+                                                    <label htmlFor={`checkbox-table-search-${index}-${itemIndex}`} className="sr-only">
+                                                        Select
+                                                    </label>
+                                                </div>
+                                            </td>
+                                            <th scope="row" className="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                                <img src={item.images[0]} alt={item.name} className="w-auto h-8 mr-3" />
+                                                {item.name}
+                                            </th>
+                                            <td className="px-4 py-2">
+                                                {menu.restaurantId.categoryIds.map((categoryId) => {
+                                                    const category = categories.find((cat) => cat._id === categoryId);
+                                                    return (
+                                                        <span
+                                                            key={categoryId}
+                                                            className="bg-table_primany-100 text-table_primany-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-table_primany-900 dark:text-table_primany-300 mr-1.5"
+                                                        >
+                                                            {category ? category.name : 'Unknown Category'}
+                                                        </span>
+                                                    );
+                                                })}
+                                            </td>
+                                            <td className="px-4 py-2">
                                                 <span
-                                                    key={category._id}
-                                                    className="bg-table_primany-100 text-table_primany-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-table_primany-900 dark:text-table_primany-300"
+                                                    className={`text-xs font-medium px-2 py-0.5 rounded ${
+                                                        item.available
+                                                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
+                                                    }`}
                                                 >
-                                                    {category.name}
+                                                    {item.available ? 'Available' : 'Not Available'}
                                                 </span>
-                                            ))} */}
-                                        </td>
-                                        <td className="px-4 py-2">
-                                            <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-red-900 dark:text-red-300">
-                                                {menu.items[0].available ? 'Available' : 'Not Available'}
-                                            </span>
-                                        </td>
-                                        <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">${menu.items[0].price}</td>
-                                        <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.restaurantId.name}</td>
-                                        <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.updatedAt}</td>
-                                    </tr>
-                                ))}
+                                            </td>
+                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.price}</td>
+                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.restaurantId.name}</td>
+                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.updatedAt}</td>
+                                        </tr>
+                                    ))
+                                )}
                             </tbody>
                         </table>
                     </div>
                     <nav className="flex flex-col items-start justify-between p-4 space-y-3 md:flex-row md:items-center md:space-y-0" aria-label="Table navigation">
                         <span className="text-sm font-normal text-gray-500 dark:text-gray-400">
                             Showing
-                            <span className="font-semibold text-gray-900 dark:text-white">1-10</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">
+                                {(currentPage - 1) * itemsPerPage + 1}-{Math.min(currentPage * itemsPerPage, totalItems)}{' '}
+                            </span>
                             of
-                            <span className="font-semibold text-gray-900 dark:text-white">1000</span>
+                            <span className="font-semibold text-gray-900 dark:text-white">{totalItems}</span>
                         </span>
                         <ul className="inline-flex items-stretch -space-x-px">
                             <li>
-                                <a
-                                    href="#"
-                                    className="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                                <button
+                                    onClick={() => handlePageChange(currentPage - 1)}
+                                    disabled={currentPage === 1}
+                                    className="flex items-center justify-center h-full py-1.5 px-3 ml-0 text-gray-500 bg-white rounded-l-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <span className="sr-only">Previous</span>
                                     <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path
-                                            fill-rule="evenodd"
+                                            fillRule="evenodd"
                                             d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z"
-                                            clip-rule="evenodd"
+                                            clipRule="evenodd"
                                         />
                                     </svg>
-                                </a>
+                                </button>
                             </li>
                             <li>
-                                <a
-                                    href="#"
+                                <button
+                                    onClick={() => handlePageChange(currentPage)}
                                     className="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
                                 >
-                                    1
-                                </a>
+                                    {currentPage}
+                                </button>
                             </li>
                             <li>
-                                <a
-                                    href="#"
-                                    className="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                                >
-                                    2
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="#"
-                                    aria-current="page"
-                                    className="z-10 flex items-center justify-center px-3 py-2 text-sm leading-tight border text-table_primany-600 bg-table_primany-50 border-table_primany-300 hover:bg-table_primany-100 hover:text-table_primany-700 dark:border-gray-700 dark:bg-gray-700 dark:text-white"
-                                >
-                                    3
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="#"
-                                    className="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                                >
-                                    ...
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="#"
-                                    className="flex items-center justify-center px-3 py-2 text-sm leading-tight text-gray-500 bg-white border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
-                                >
-                                    100
-                                </a>
-                            </li>
-                            <li>
-                                <a
-                                    href="#"
-                                    className="flex items-center justify-center h-full py-1.5 px-3 leading-tight text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white"
+                                <button
+                                    onClick={() => handlePageChange(currentPage + 1)}
+                                    disabled={currentPage === totalPages}
+                                    className="flex items-center justify-center h-full py-1.5 px-3 leading-tight text-gray-500 bg-white rounded-r-lg border border-gray-300 hover:bg-gray-100 hover:text-gray-700 dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                     <span className="sr-only">Next</span>
                                     <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path
-                                            fill-rule="evenodd"
+                                            fillRule="evenodd"
                                             d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
-                                            clip-rule="evenodd"
+                                            clipRule="evenodd"
                                         />
                                     </svg>
-                                </a>
+                                </button>
                             </li>
                         </ul>
                     </nav>
@@ -313,7 +440,7 @@ const Menu = () => {
                                     <span className="sr-only">Close modal</span>
                                 </button>
                             </div>
-                            <form action="#">
+                            <form onSubmit={handleSubmit} encType="multipart/form-data">
                                 <div className="grid gap-4 mb-4 sm:grid-cols-2">
                                     <div>
                                         <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -325,8 +452,11 @@ const Menu = () => {
                                             id="name"
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                             placeholder="Type menu item name"
-                                            required=""
+                                            value={newItem.name}
+                                            onChange={handleInputChange}
+                                            required
                                         />
+                                        {errors.name && <p className="text-red-600 text-sm mt-1 ml-0.5">{errors.name.message}</p>}
                                     </div>
                                     <div>
                                         <label htmlFor="available" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -335,11 +465,11 @@ const Menu = () => {
                                         <select
                                             id="available"
                                             name="available"
+                                            onChange={handleInputChange}
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         >
-                                            <option selected="#">Select availability</option>
-                                            <option value="true">Available</option>
-                                            <option value="false">Not Available</option>
+                                            <option value={false}>Not Available</option>
+                                            <option value={true}>Available</option>
                                         </select>
                                     </div>
                                     <div>
@@ -352,7 +482,9 @@ const Menu = () => {
                                             id="price"
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                             placeholder="$29"
-                                            required=""
+                                            value={newItem.price}
+                                            onChange={handleInputChange}
+                                            required
                                         />
                                     </div>
                                     <div>
@@ -362,10 +494,16 @@ const Menu = () => {
                                         <select
                                             id="restaurant"
                                             name="restaurantId"
+                                            value={restaurantId}
+                                            onChange={handleSelectChange}
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         >
-                                            <option selected="#">Select restaurant</option>
-                                            <option value="#"></option>
+                                            <option value="">Select restaurant</option>
+                                            {menus.map((menu) => (
+                                                <option key={menu.restaurantId._id} value={menu.restaurantId._id}>
+                                                    {menu.restaurantId.name}
+                                                </option>
+                                            ))}
                                         </select>
                                     </div>
                                     <div className="sm:col-span-2">
@@ -374,9 +512,13 @@ const Menu = () => {
                                         </label>
                                         <textarea
                                             id="description"
+                                            name="description"
                                             rows="4"
                                             className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                             placeholder="Write menu item description here"
+                                            value={newItem.description}
+                                            onChange={handleInputChange}
+                                            required
                                         ></textarea>
                                     </div>
                                     <div className="sm:col-span-2">
@@ -388,9 +530,9 @@ const Menu = () => {
                                             aria-describedby="file_input_help"
                                             id="file_input"
                                             type="file"
-                                            name="images"
-                                            accept="image/png, image/jpg, image/jpeg"
+                                            accept="image/*"
                                             multiple
+                                            onChange={handleImageChange}
                                         />
                                     </div>
                                 </div>
@@ -408,6 +550,7 @@ const Menu = () => {
                     </div>
                 </div>
             )}
+            <ToastContainer />
         </section>
     );
 };
