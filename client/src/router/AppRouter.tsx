@@ -8,6 +8,8 @@ import PrivateRoute from "@/layouts/PrivateRoute";
 import Profile from "@/pages/Profile";
 import PublicRoute from "@/layouts/PublicRoute";
 import Home from "@/pages/Home";
+import DashboardLayout from "@/layouts/DashboardLayout";
+import HomePage from "@/pages/dashboard/HomePage";
 
 const AppRouter = createBrowserRouter([
   {
@@ -50,6 +52,17 @@ const AppRouter = createBrowserRouter([
         ],
       },
     ],
+
+  },
+  {
+    path: '/dashboard',
+    element: <DashboardLayout />,
+    children: [
+      {
+        path: '/dashboard/home',
+        element: <HomePage />
+      }
+    ]
   },
   {
     path: "*",
