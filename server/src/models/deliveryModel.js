@@ -6,10 +6,15 @@ const deliverySchema = new Schema({
   deliveryAgentId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   status: {
     type: String,
-    enum: ["assigned", "on_the_way", "delivered"],
+    enum: ["assigned", "refused", "on_the_way", "delivered"],
     default: "assigned",
   },
-  deliveredAt: { type: Date },
-});
+  deliveredAt: { 
+    type: Date,
+    default: null
+  },
+},
+{ timestamps: true }
+);
 
 export default model("Delivery", deliverySchema);

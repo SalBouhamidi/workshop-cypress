@@ -1,28 +1,77 @@
 import mongoose from "mongoose";
 import Menu from "../../models/menuModel.js";
 import Restaurant from "../../models/restaurantModel.js";
+import Category from "../../models/categoryModel.js";
 import { validateStoreMenu } from "../../validations/manuValidation/storeMenuSchema.js";
 import { validateUpdateMenu } from "../../validations/manuValidation/updateMenuSchema.js";
 
+import { uploadImage } from "../../services/cloudinaryService.js";
+
 // Displaying all the menus
+// Fetching all menus and categories
 const Menus = async (req, res) => {
   try {
-    const menus = await Menu.find().populate("restaurantId", "name categoryIds");
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
+    // Fetching menus with pagination
+    const menusQuery = Menu.find()
+      .populate("restaurantId", "name categoryIds")
+      .skip(skip)
+      .limit(limit)
+      .lean();
+
+    // Fetching categories
+    const categoriesQuery = Category.find().lean();
+
+    // Fetching total count of menus
+    const totalCountQuery = Menu.countDocuments();
+
+    // Execute all queries in parallel
+    const [menus, categories, totalCount] = await Promise.all([
+      menusQuery,
+      categoriesQuery,
+      totalCountQuery
+    ]);
+
+    // Calculate total pages
+    const totalPages = Math.ceil(totalCount / limit);
+
+    // Prepare response object
+    const response = {
+      menus,
+      categories,
+      pagination: {
+        currentPage: page,
+        totalPages,
+        totalItems: totalCount,
+        itemsPerPage: limit
+      }
+    };
+
+    // If no menus are found
     if (menus.length === 0) {
-      return res.status(404).json({ message: "No menus found." });
+      response.message = "No menus found for this page.";
     }
 
-    return res.status(200).json(menus);
+    // If no categories are found
+    if (categories.length === 0) {
+      response.message = response.message 
+        ? response.message + " No categories found."
+        : "No categories found.";
+    }
+
+    return res.status(200).json(response);
+
   } catch (error) {
-    console.error("Error fetching menus:", error);
-    return res
-      .status(500)
-      .json({
-        message: "Oops! Something went wrong while fetching the menus.",
-      });
+    console.error("Error fetching menus and categories:", error);
+    return res.status(500).json({
+      message: "An error occurred while fetching menus and categories.",
+    });
   }
 };
+
 
 // Displaying menu by restaurant
 const ShowMenu = async (req, res) => {
@@ -86,18 +135,18 @@ const ShowMenuItem = async (req, res) => {
     return res.status(200).json(menuItem);
   } catch (error) {
     console.error("Error fetching menu item:", error);
-    return res
-      .status(500)
-      .json({
-        message: "Oops! Something went wrong while fetching the menu item.",
-      });
+    return res.status(500).json({
+      message: "Oops! Something went wrong while fetching the menu item.",
+    });
   }
 };
 
 // Storing new menu
 const StoreMenu = async (req, res) => {
+  console.log(req.body);
   try {
-    const { restaurantId, items } = req.body;
+    const { restaurantId, name, description, price, available, images } =
+      req.body;
 
     // Validate input
     const { error } = validateStoreMenu(req.body);
@@ -107,23 +156,40 @@ const StoreMenu = async (req, res) => {
         .json({ message: "Validation error", details: error.details });
     }
 
-    // Checking if a menu already exists for the restaurant
-    const existingMenu = await Menu.findOne({ restaurantId });
-    if (existingMenu) {
-      return res
-        .status(400)
-        .json({ message: "This restaurant already has a menu." });
+    // Process images
+    let imageUrls = [];
+    if (images && images.length > 0) {
+      try {
+        imageUrls = await Promise.all(images.map(uploadImage));
+      } catch (uploadError) {
+        console.error("Error uploading images:", uploadError);
+      }
     }
 
-    // Creating a new menu if no existing menu found
-    const newMenu = new Menu({
-      restaurantId,
-      items,
-    });
+    // Create the new menu item
+    const newItem = {
+      name,
+      description,
+      price,
+      available,
+      images: imageUrls,
+    };
 
-    const savedMenu = await newMenu.save();
+    // Check if a menu already exists for the restaurant
+    let menu = await Menu.findOne({ restaurantId });
+    if (menu) {
+      // Add new item to the existing menu
+      menu.items.push(newItem);
+    } else {
+      // Create a new menu if no existing menu found
+      menu = new Menu({
+        restaurantId,
+        items: [newItem],
+      });
+    }
 
-    return res.status(201).json(savedMenu); // Menu created
+    const savedMenu = await menu.save();
+    return res.status(menu.isNew ? 201 : 200).json(savedMenu);
   } catch (error) {
     console.error("Error storing menu:", error);
     return res.status(500).json({ message: "Internal server error." });

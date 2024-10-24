@@ -6,35 +6,31 @@ const menuSchema = Joi.object({
     'string.empty': 'Restaurant ID is required.',
     'any.required': 'Restaurant ID is required.',
   }),
-  items: Joi.array()
-    .items(
-      Joi.object({
-        name: Joi.string().required().messages({
-          'string.empty': 'Item name is required.',
-          'any.required': 'Item name is required.',
-        }),
-        description: Joi.string().required().messages({
-          'string.empty': 'Item description is required.',
-          'any.required': 'Item description is required.',
-        }),
-        price: Joi.number().greater(0).required().messages({
-          'number.base': 'Price must be a number.',
-          'number.greater': 'Price must be greater than zero.',
-          'any.required': 'Price is required.',
-        }),
-        available: Joi.boolean().optional(),
-        images: Joi.array()
-          .items(Joi.string().uri().messages({
-            'string.uri': 'Each image URL must be valid.',
-          }))
-          .optional(),
-      })
-    )
+  name: Joi.string().required().messages({
+    'string.empty': 'Name is required.',
+    'any.required': 'Name is required.',
+  }),
+  description: Joi.string().required().messages({
+    'string.empty': 'Description is required.',
+    'any.required': 'Description is required.',
+  }),
+  price: Joi.number().positive().required().messages({
+    'number.base': 'Price must be a number.',
+    'number.positive': 'Price must be positive.',
+    'any.required': 'Price is required.',
+  }),
+  available: Joi.boolean().required().messages({
+    'any.required': 'Availability is required.',
+  }),
+  images: Joi.array()
+    .items(Joi.string().messages({
+      'string.base': 'Image must be a string.',
+    }))
     .min(1)
     .required()
     .messages({
-      'array.empty': 'At least one menu item is required.',
-      'any.required': 'Menu items are required.',
+      'array.min': 'At least one image is required.',
+      'any.required': 'Images are required.',
     }),
 });
 

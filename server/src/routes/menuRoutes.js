@@ -18,8 +18,8 @@ router.get("/:restaurantName/menu", ShowMenu); // Display menu by restaurant
 router.get("/:restaurantName/:itemName", ShowMenuItem); // Display menu item by restaurant
 
 // Protected Routes (Only Managers can access)
-router.post("/store-menu", authMiddleware, managerMiddleware, StoreMenu); // Create a new menu
-
+router.post("/store-menu", StoreMenu); // Create a new menu
+// , authMiddleware, managerMiddleware
 router.post(
   "/:restaurantName/update-menu",
   authMiddleware,
