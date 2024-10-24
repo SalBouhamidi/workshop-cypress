@@ -8,6 +8,10 @@ class restaurantController{
     async search(req, res){
         try {
             const { name, cuisine, city } = req.query;
+            console.log(req.query)
+            if(Object.keys(req.query).length === 0){
+              return res.status(400).json({message:"Please set the restaurant name or specify the location before you search"})
+            }
             const query = {
                 ...(name && { name: { $regex: name, $options: 'i' } }),
                 ...(city && { 'location.city': city }),
@@ -24,9 +28,9 @@ class restaurantController{
             }
             const restaurants = await Restaurant.find(query);
             if(restaurants.length > 0){
-              res.status(200).json(restaurants);
+              return res.status(200).json(restaurants);
             }else{
-              res.status(200).json({"message": "There's no restaurants available"});
+              return res.status(403).json({"message": "There's no restaurants available"});
             }
           } catch (error) {
             console.error(error);
