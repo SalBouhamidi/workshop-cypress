@@ -5,9 +5,6 @@ import { authRoutes } from "./src/routes/index.js";
 import cors from "cors";
 import router from "./src/routes/api.js";
 
-
-
-
 const app = express();
 
 const allowedOrigins = [process.env.FRONT_END, process.env.RONT_END_2];
@@ -47,9 +44,14 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message });
 });
 
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3000; 
 
 app.listen(port, () => {
   console.log("Server is running on port: " + port);
 });
+
+
 connectDB();
+
+
+export default app;

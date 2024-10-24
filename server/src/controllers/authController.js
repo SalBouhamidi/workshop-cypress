@@ -24,6 +24,7 @@ const signUp = async (req, res) => {
       ...req.body,
       password: hashedPassword,
     });
+    console.log(res.body)
 
     await newUser.save();
     const token = generateToken(newUser);
@@ -34,6 +35,7 @@ const signUp = async (req, res) => {
       html: `<h1>Welcome to our platform!</h1><p>Please confirm your registration by clicking on the following link: <a href="http://localhost:3000/api/auth/confirmation/${token}">Confirm Registration</a></p>`,
     };
     sendEmail(emailInfo);
+    
 
     res.status(201).json({
       success: true,
