@@ -1,3 +1,5 @@
+import { model, Schema } from "mongoose";
+
 const notificationSchema = new Schema({
   userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
   message: { type: String, required: true },
@@ -10,4 +12,4 @@ const notificationSchema = new Schema({
   createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = model("Notification", notificationSchema);
+export default model("Notification", notificationSchema);

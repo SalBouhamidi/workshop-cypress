@@ -1,9 +1,14 @@
 import express from "express";
 import "dotenv/config";
 import connectDB from "./src/config/dbConfig.js";
-import { authRoutes } from "./src/routes/index.js";
-import restaurantRoutes from "./src/routes/Super-admin/restaurantRoutes.js";
+import {
+  authRoutes,
+  orderRouter,
+  deliveryRouter,
+  restaurantRoutes,
+} from "./src/routes/index.js";
 import cors from "cors";
+import router from "./src/routes/api.js";
 
 const app = express();
 
@@ -37,6 +42,9 @@ app.get("/test", async (req, res) => {
 app.use(express.json());
 app.use("/api/auth", authRoutes);
 app.use("/api/restaurants", restaurantRoutes);
+app.use("/api/order", orderRouter);
+app.use("/api/delivery", deliveryRouter);
+app.use("/api", router);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
@@ -49,3 +57,5 @@ app.listen(port, () => {
   console.log("Server is running on port: " + port);
 });
 connectDB();
+
+export default app;

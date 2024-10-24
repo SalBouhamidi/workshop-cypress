@@ -1,17 +1,30 @@
 import Restaurant from "../../models/restaurantModel.js";
 
-// Get all restaurants
-exports.getAllRestaurants = async (req, res) => {
+const getAllRestaurants = async (req, res) => {
   try {
-    const restaurants = await Restaurant.find();
-    res.status(200).json(restaurants);
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 3;
+    const skip = (page - 1) * limit;
+
+    const totalRestaurants = await Restaurant.countDocuments();
+
+    const restaurants = await Restaurant.find().skip(skip).limit(limit);
+
+    res.status(200).json({
+      data: restaurants,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalRestaurants / limit),
+        totalItems: totalRestaurants,
+        itemsPerPage: limit,
+      },
+    });
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
 
-// Get a single restaurant
-exports.getRestaurant = async (req, res) => {
+const getRestaurant = async (req, res) => {
   try {
     const restaurant = await Restaurant.findById(req.params.id);
     if (!restaurant)
@@ -22,8 +35,7 @@ exports.getRestaurant = async (req, res) => {
   }
 };
 
-// Create a new restaurant
-exports.createRestaurant = async (req, res) => {
+const createRestaurant = async (req, res) => {
   const newRestaurant = new Restaurant(req.body);
   try {
     const savedRestaurant = await newRestaurant.save();
@@ -33,8 +45,7 @@ exports.createRestaurant = async (req, res) => {
   }
 };
 
-// Update a restaurant
-exports.updateRestaurant = async (req, res) => {
+const updateRestaurant = async (req, res) => {
   try {
     const updatedRestaurant = await Restaurant.findByIdAndUpdate(
       req.params.id,
@@ -49,8 +60,7 @@ exports.updateRestaurant = async (req, res) => {
   }
 };
 
-// Delete a restaurant
-exports.deleteRestaurant = async (req, res) => {
+const deleteRestaurant = async (req, res) => {
   try {
     const deletedRestaurant = await Restaurant.findByIdAndDelete(req.params.id);
     if (!deletedRestaurant)
@@ -61,26 +71,10 @@ exports.deleteRestaurant = async (req, res) => {
   }
 };
 
-// Additional restaurant-specific methods could be added here, for example:
-
-// Search restaurants by cuisine
-exports.searchByCuisine = async (req, res) => {
-  try {
-    const restaurants = await Restaurant.find({ cuisine: req.query.cuisine });
-    res.status(200).json(restaurants);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get top-rated restaurants
-exports.getTopRated = async (req, res) => {
-  try {
-    const topRestaurants = await Restaurant.find()
-      .sort({ rating: -1 })
-      .limit(10);
-    res.status(200).json(topRestaurants);
-  } catch (error) {
-    res.status(500).json({ message: error.message });
-  }
+export {
+  getAllRestaurants,
+  getRestaurant,
+  createRestaurant,
+  updateRestaurant,
+  deleteRestaurant,
 };
