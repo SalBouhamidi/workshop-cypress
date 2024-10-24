@@ -1,5 +1,4 @@
-import mongoose from "mongoose";
-const { Schema, model } = mongoose;
+import mongoose, { Schema } from "mongoose";
 
 const userSchema = new Schema(
   {
@@ -8,9 +7,9 @@ const userSchema = new Schema(
     userName: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    roleId: { type: Schema.Types.ObjectId, ref: "Role", required: true },
     PhoneNumber: String,
     Address: String,
+    roleId: { type: Schema.Types.ObjectId, ref: "Role", required: true },
     resetToken: String,
     resetTokenExpiration: String,
     twoStepVerification: { type: Boolean, default: false },

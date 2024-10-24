@@ -1,27 +1,22 @@
 import mongoose from "mongoose";
 const { Schema, model } = mongoose;
 
-const menuItemSchema = new Schema(
-  {
-    name: { type: String, required: true, unique: true },
-    description: { type: String, required: true },
-    price: { type: Number, required: true, min: 0 },
-    available: { type: Boolean, default: true },
-    images: { type: [String], default: ["default-placeholder.png"] },
+const menuSchema = new Schema({
+  restaurantId: {
+    type: Schema.Types.ObjectId,
+    ref: "Restaurant",
+    required: true,
   },
-  { timestamps: true }
-);
-
-const menuSchema = new Schema(
-  {
-    restaurantId: {
-      type: Schema.Types.ObjectId,
-      ref: "Restaurant",
-      required: true,
+  items: [
+    {
+      name: { type: String, required: true },
+      description: { type: String, required: true },
+      price: { type: Number, required: true },
+      available: { type: Boolean, default: true },
     },
-    items: [menuItemSchema],
-  },
-  { timestamps: true }
-);
+  ],
+  createdAt: { type: Date, default: Date.now },
+  updatedAt: { type: Date, default: Date.now },
+});
 
 export default model("Menu", menuSchema);

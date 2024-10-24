@@ -5,8 +5,8 @@ import {
   authRoutes,
   orderRouter,
   deliveryRouter,
-  restaurantRoutes,
   menuRoutes,
+  restaurantRoutes,
 } from "./src/routes/index.js";
 import cors from "cors";
 import router from "./src/routes/api.js";
