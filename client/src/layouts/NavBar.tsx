@@ -20,6 +20,7 @@ const NavBar = () => {
   };
 
   return (
+    <>
     <nav className="bg-white shadow-md border border-b-gray-300 dark:bg-black dark:border-b-white/25">
       <div className="max-w-7xl  mx-auto px-4">
         <div className="flex justify-between h-16">
@@ -119,7 +120,9 @@ const NavBar = () => {
         </div>
       </div>
     </nav>
+    </>
   );
+  
 };
 
 export default NavBar;

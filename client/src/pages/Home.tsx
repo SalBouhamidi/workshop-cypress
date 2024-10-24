@@ -1,8 +1,18 @@
+import AboutUs from "@/components/Home/AboutUs";
+import Herosection from "../components/Home/Herosection";
+import SomeOrders from "../components/Home/someOrders";
+import PopularDishes from "../components/Home/popularDishes";
+import CallToAction from "../components/Home/callToAction";
+
 const Home = () => {
   return (
-    <div className="text-center pt-24">
-      <h2 className="text-2xl">Welcome to the Home page!!</h2>
-    </div>
+    <>
+      <Herosection />
+      <SomeOrders />
+      <AboutUs />
+      <PopularDishes />
+      <CallToAction />
+    </>
   );
 };
 

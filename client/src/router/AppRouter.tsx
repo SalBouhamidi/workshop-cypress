@@ -18,10 +18,6 @@ const AppRouter = createBrowserRouter([
         element: <PrivateRoute />,
         children: [
           {
-            path: "/",
-            element: <Home />,
-          },
-          {
             path: "/profile",
             element: <Profile />,
           },
@@ -30,6 +26,10 @@ const AppRouter = createBrowserRouter([
       {
         element: <PublicRoute />,
         children: [
+          {
+            path: "/",
+            element: <Home />,
+          },
           {
             path: "/login",
             element: <LogIn />,

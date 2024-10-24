@@ -9,7 +9,6 @@ router.get('/search', restaurantController.search);
 
 
 
-
 export default router;
 
 
