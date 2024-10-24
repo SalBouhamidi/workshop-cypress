@@ -6,6 +6,7 @@ import {
   orderRouter,
   deliveryRouter,
   restaurantRoutes,
+  menuRoutes,
 } from "./src/routes/index.js";
 import cors from "cors";
 import router from "./src/routes/api.js";
@@ -45,20 +46,19 @@ app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/order", orderRouter);
 app.use("/api/delivery", deliveryRouter);
 app.use("/api", router);
+app.use("/api/menus", menuRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message });
 });
 
-const port = process.env.PORT || 3000; 
+const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
   console.log("Server is running on port: " + port);
 });
 
-
 connectDB();
-
 
 export default app;

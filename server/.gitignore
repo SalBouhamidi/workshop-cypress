@@ -1,3 +1,8 @@
 .env
 node_modules
+<<<<<<< HEAD
 src/seeders
+=======
+dummy-data
+seeders
+>>>>>>> 74257d0c7c9d6faa454922ff4c1a0b345744799f

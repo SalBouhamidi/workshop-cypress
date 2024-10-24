@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
+const { Schema, model } = mongoose;
 
-const restaurantSchema = new mongoose.Schema({
+const restaurantSchema = new Schema({
   name: { type: String, required: true },
   location: {
     city: { type: String, required: true },
@@ -8,8 +9,12 @@ const restaurantSchema = new mongoose.Schema({
   },
   categoryIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
   menuId: { type: mongoose.Schema.Types.ObjectId, ref: "Menu", default: null },
-  managerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  managerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
-export default mongoose.model("Restaurant", restaurantSchema);
+export default model("Restaurant", restaurantSchema);
