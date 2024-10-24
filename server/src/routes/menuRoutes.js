@@ -6,8 +6,9 @@ import {
   StoreMenu,
   UpdateMenu,
   DeleteMenu,
-} from "../controllers/menuController.js";
-import { authMiddleware, managerMiddleware } from "../middlewares/menuMiddleware.js";
+} from "../controllers/Manager/menuController.js";
+import { managerMiddleware } from "../middlewares/managerMiddleware.js";
+import { authMiddleware } from "../middlewares/authMiddleware.js";
 
 const router = express.Router();
 
@@ -17,12 +18,7 @@ router.get("/:restaurantName/menu", ShowMenu); // Display menu by restaurant
 router.get("/:restaurantName/:itemName", ShowMenuItem); // Display menu item by restaurant
 
 // Protected Routes (Only Managers can access)
-router.post(
-  "/store-menu",
-  authMiddleware,
-  managerMiddleware,
-  StoreMenu
-); // Create a new menu
+router.post("/store-menu", authMiddleware, managerMiddleware, StoreMenu); // Create a new menu
 
 router.post(
   "/:restaurantName/update-menu",

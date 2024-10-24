@@ -7,7 +7,7 @@ import { validateUpdateMenu } from "../../validations/manuValidation/updateMenuS
 // Displaying all the menus
 const Menus = async (req, res) => {
   try {
-    const menus = await Menu.find().populate("restaurantId", "name location");
+    const menus = await Menu.find().populate("restaurantId", "name categoryIds");
 
     if (menus.length === 0) {
       return res.status(404).json({ message: "No menus found." });

@@ -1,8 +1,41 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import axios from 'axios';
+
+interface Image {
+    image: string;
+}
+
+interface MenuItem {
+    name: string;
+    description: string;
+    price: number;
+    available: boolean;
+    images: Image[];
+}
+
+interface Category {
+    _id: string;
+    name: string;
+}
+
+interface Restaurant {
+    name: string;
+    categoryIds: Category[];
+}
+
+interface Menu {
+    restaurantId: Restaurant;
+    items: MenuItem[];
+    updatedAt: string;
+}
 
 const Menu = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isAllChecked, setIsAllChecked] = useState(false);
+
+    const [menus, setMenus] = useState<Menu[]>([]);
+    const [error, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
 
     const toggleModal = () => {
         setIsModalOpen(!isModalOpen);
@@ -17,6 +50,40 @@ const Menu = () => {
             checkbox.checked = checked;
         });
     };
+    menus.map((menu, index) => {
+        if (menu.restaurantId?.categoryIds) {
+            menu.restaurantId.categoryIds.forEach((category) => {
+                console.log(category.name);
+            });
+        } else {
+            console.log(`Menu at index ${index} has no categories`, menu);
+        }
+    });
+
+    // Fetch all menus when the component is mounted
+    useEffect(() => {
+        const fetchMenus = async () => {
+            try {
+                const response = await axios.get('http://localhost:3000/api/menus');
+                console.log("Menus fetched:", response.data);
+                setMenus(response.data);
+                setLoading(false);
+            } catch (error) {
+                setError('Failed to fetch menus. Please try again later.');
+                setLoading(false);
+            }
+        };
+
+        fetchMenus();
+    }, []);
+
+    if (loading) {
+        return <div>Loading menus...</div>;
+    }
+
+    if (error) {
+        return <div>{error}</div>;
+    }
     return (
         <section className="bg-gray-50 dark:bg-gray-900 py-3 sm:py-5">
             <div className="px-4 mx-auto max-w-screen-2xl lg:px-12">
@@ -25,7 +92,7 @@ const Menu = () => {
                         <div className="flex items-center flex-1 space-x-4">
                             <h5>
                                 <span className="text-gray-500">All Manus:</span>
-                                <span className="dark:text-white pl-1.5">5</span>
+                                <span className="dark:text-white pl-1.5">{menus.length}</span>
                             </h5>
                         </div>
                         <div className="flex flex-col flex-shrink-0 space-y-3 md:flex-row md:items-center lg:justify-end md:space-y-0 md:space-x-3">
@@ -101,64 +168,44 @@ const Menu = () => {
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                    <td className="w-4 px-4 py-3">
-                                        <div className="flex items-center">
-                                            <input
-                                                id="checkbox-table-search-1"
-                                                type="checkbox"
-                                                className="w-4 h-4 bg-gray-100 border-gray-300 rounded text-table_primany-600 focus:ring-table_primany-500 dark:focus:ring-table_primany-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 table-checkbox"
-                                            />
-                                            <label htmlFor="checkbox-table-search-1" className="sr-only">
-                                                Select
-                                            </label>
-                                        </div>
-                                    </td>
-                                    <th scope="row" className="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        <img src="https://flowbite.s3.amazonaws.com/blocks/application-ui/products/imac-front-image.png" alt="iMac Front Image" className="w-auto h-8 mr-3" />
-                                        Apple iMac 27&#34;
-                                    </th>
-                                    <td className="px-4 py-2">
-                                        <span className="bg-table_primany-100 text-table_primany-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-table_primany-900 dark:text-table_primany-300">
-                                            Italian
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-2">
-                                        <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-red-900 dark:text-red-300">Not Available</span>
-                                    </td>
-                                    <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">1.47</td>
-                                    <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">Pizza Palace</td>
-                                    <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">Just now</td>
-                                </tr>
-                                <tr className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                    <td className="w-4 px-4 py-3">
-                                        <div className="flex items-center">
-                                            <input
-                                                id="checkbox-table-search-1"
-                                                type="checkbox"
-                                                className="w-4 h-4 bg-gray-100 border-gray-300 rounded text-table_primany-600 focus:ring-table_primany-500 dark:focus:ring-table_primany-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 table-checkbox"
-                                            />
-                                            <label htmlFor="checkbox-table-search-1" className="sr-only">
-                                                Select
-                                            </label>
-                                        </div>
-                                    </td>
-                                    <th scope="row" className="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                        <img src="https://flowbite.s3.amazonaws.com/blocks/application-ui/products/imac-front-image.png" alt="iMac Front Image" className="w-auto h-8 mr-3" />
-                                        Apple iMac 20&#34;
-                                    </th>
-                                    <td className="px-4 py-2">
-                                        <span className="bg-table_primany-100 text-table_primany-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-table_primany-900 dark:text-table_primany-300">
-                                            Italian
-                                        </span>
-                                    </td>
-                                    <td className="px-4 py-2">
-                                        <span className="bg-green-100 text-green-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-green-900 dark:text-green-300">Available</span>
-                                    </td>
-                                    <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">1.15</td>
-                                    <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">Pizza Palace</td>
-                                    <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">This week</td>
-                                </tr>
+                                {menus.map((menu, index) => (
+                                    <tr className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                        <td className="w-4 px-4 py-3">
+                                            <div className="flex items-center">
+                                                <input
+                                                    id="checkbox-table-search-1"
+                                                    type="checkbox"
+                                                    className="w-4 h-4 bg-gray-100 border-gray-300 rounded text-table_primany-600 focus:ring-table_primany-500 dark:focus:ring-table_primany-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 table-checkbox"
+                                                />
+                                                <label htmlFor="checkbox-table-search-1" className="sr-only">
+                                                    Select
+                                                </label>
+                                            </div>
+                                        </td>
+                                        <th scope="row" className="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                            <img src={menu.items[0].images[0]} alt={menu.items[0].name} className="w-auto h-8 mr-3" />
+                                            {menu.items[0].name}
+                                        </th>
+                                        <td className="px-4 py-2">
+                                            {/* {menu.restaurantId.categoryIds.map((category) => (
+                                                <span
+                                                    key={category._id}
+                                                    className="bg-table_primany-100 text-table_primany-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-table_primany-900 dark:text-table_primany-300"
+                                                >
+                                                    {category.name}
+                                                </span>
+                                            ))} */}
+                                        </td>
+                                        <td className="px-4 py-2">
+                                            <span className="bg-red-100 text-red-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-red-900 dark:text-red-300">
+                                                {menu.items[0].available ? 'Available' : 'Not Available'}
+                                            </span>
+                                        </td>
+                                        <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">${menu.items[0].price}</td>
+                                        <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.restaurantId.name}</td>
+                                        <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.updatedAt}</td>
+                                    </tr>
+                                ))}
                             </tbody>
                         </table>
                     </div>
