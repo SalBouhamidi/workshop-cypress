@@ -148,7 +148,7 @@ const Menu = () => {
                 restaurantId,
                 name: newItem.name,
                 description: newItem.description,
-                price: parseFloat(newItem.price),
+                price: parseFloat(newItem?.price),
                 available: newItem.available,
             };
 
@@ -189,7 +189,7 @@ const Menu = () => {
         setLoading(true);
         try {
             const response = await axios.get(`http://localhost:3000/api/menus?page=${page}&limit=${itemsPerPage}`);
-            // console.log('response:', response.data);
+            console.log('response:', response.data);
             setMenus(response.data.menus);
             setCategories(response.data.categories);
             setCurrentPage(response.data.pagination.currentPage);
@@ -327,7 +327,7 @@ const Menu = () => {
                                                 </div>
                                             </td>
                                             <th scope="row" className="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                <img src={item.images[0]} alt={item.name} className="w-auto h-8 mr-3" />
+                                                {/* <img src={item?.images[0] || null} alt={item.name} className="w-auto h-8 mr-3" /> */}
                                                 {item.name}
                                             </th>
                                             <td className="px-4 py-2">

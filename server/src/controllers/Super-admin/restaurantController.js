@@ -8,7 +8,10 @@ const getAllRestaurants = async (req, res) => {
 
     const totalRestaurants = await Restaurant.countDocuments();
 
-    const restaurants = await Restaurant.find().skip(skip).limit(limit);
+    const restaurants = await Restaurant.find()
+      .skip(skip)
+      .limit(limit)
+      .populate("managerId", "firstName lastName email");
 
     res.status(200).json({
       data: restaurants,
@@ -37,10 +40,13 @@ const getRestaurant = async (req, res) => {
 
 const createRestaurant = async (req, res) => {
   const newRestaurant = new Restaurant(req.body);
+  console.log(req.body);
+
   try {
     const savedRestaurant = await newRestaurant.save();
     res.status(201).json(savedRestaurant);
   } catch (error) {
+    console.log(error);
     res.status(400).json({ message: error.message });
   }
 };
