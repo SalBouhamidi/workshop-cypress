@@ -23,25 +23,25 @@ const Menus = async (req, res) => {
         $group: {
           _id: "$_id",
           restaurantId: { $first: "$restaurantId" },
-          items: { $push: "$items" }
-        }
+          items: { $push: "$items" },
+        },
       },
       {
         $lookup: {
           from: "restaurants",
           localField: "restaurantId",
           foreignField: "_id",
-          as: "restaurantId"
-        }
+          as: "restaurantId",
+        },
       },
       { $unwind: "$restaurantId" },
       {
         $project: {
           "restaurantId.name": 1,
           "restaurantId.categoryIds": 1,
-          items: 1
-        }
-      }
+          items: 1,
+        },
+      },
     ]);
 
     // Fetching categories
@@ -50,15 +50,12 @@ const Menus = async (req, res) => {
     // Fetching total count of items across all menus
     const totalCountQuery = Menu.aggregate([
       { $unwind: "$items" },
-      { $count: "totalItems" }
+      { $count: "totalItems" },
     ]);
 
     // Execute all queries in parallel
-    const [menus, categories, [{ totalItems } = { totalItems: 0 }]] = await Promise.all([
-      menusQuery,
-      categoriesQuery,
-      totalCountQuery
-    ]);
+    const [menus, categories, [{ totalItems } = { totalItems: 0 }]] =
+      await Promise.all([menusQuery, categoriesQuery, totalCountQuery]);
 
     // Calculate total pages
     const totalPages = Math.ceil(totalItems / limit);
@@ -71,8 +68,8 @@ const Menus = async (req, res) => {
         currentPage: page,
         totalPages,
         totalItems,
-        itemsPerPage: limit
-      }
+        itemsPerPage: limit,
+      },
     };
 
     // If no menus are found
@@ -82,13 +79,12 @@ const Menus = async (req, res) => {
 
     // If no categories are found
     if (categories.length === 0) {
-      response.message = response.message 
+      response.message = response.message
         ? response.message + " No categories found."
         : "No categories found.";
     }
 
     return res.status(200).json(response);
-
   } catch (error) {
     console.error("Error fetching menus and categories:", error);
     return res.status(500).json({
@@ -96,7 +92,6 @@ const Menus = async (req, res) => {
     });
   }
 };
-
 
 // Displaying menu by restaurant
 const ShowMenu = async (req, res) => {
@@ -180,34 +175,36 @@ const StoreMenu = async (req, res) => {
         .json({ message: "Validation error", details: error.details });
     }
 
-    // Process images
-    let imageUrls = [];
-    if (images && images.length > 0) {
-      try {
-        imageUrls = await Promise.all(images.map(uploadImage));
-      } catch (uploadError) {
-        console.error("Error uploading images:", uploadError);
+    // If restaurantId is not a valid ObjectId, try to find the restaurant by name
+    let restaurant;
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      restaurant = await Restaurant.findOne({ name: restaurantId });
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
+      }
+    } else {
+      restaurant = await Restaurant.findById(restaurantId);
+      if (!restaurant) {
+        return res.status(404).json({ message: "Restaurant not found" });
       }
     }
 
+    // Process images
+    let imageUrls = [];
+    if (images && images.length > 0) {
+      imageUrls = await Promise.all(images.map(uploadImage));
+    }
+
     // Create the new menu item
-    const newItem = {
-      name,
-      description,
-      price,
-      available,
-      images: imageUrls,
-    };
+    const newItem = { name, description, price, available, images: imageUrls };
 
     // Check if a menu already exists for the restaurant
-    let menu = await Menu.findOne({ restaurantId });
+    let menu = await Menu.findOne({ restaurantId: restaurant._id });
     if (menu) {
-      // Add new item to the existing menu
       menu.items.push(newItem);
     } else {
-      // Create a new menu if no existing menu found
       menu = new Menu({
-        restaurantId,
+        restaurantId: restaurant._id,
         items: [newItem],
       });
     }
@@ -216,7 +213,9 @@ const StoreMenu = async (req, res) => {
     return res.status(menu.isNew ? 201 : 200).json(savedMenu);
   } catch (error) {
     console.error("Error storing menu:", error);
-    return res.status(500).json({ message: "Internal server error." });
+    return res
+      .status(500)
+      .json({ message: "Internal server error.", error: error.message });
   }
 };
 

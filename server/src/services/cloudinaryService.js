@@ -10,15 +10,19 @@ cloudinary.config({
 // Global upload function
 export const uploadImage = async (imageData) => {
     try {
+        console.log("Attempting to upload image to Cloudinary");
         const uploadResult = await cloudinary.uploader.upload(imageData, {
             folder: 'allo_media',
             use_filename: true,
             unique_filename: true,
         });
-
+        console.log("Image uploaded successfully:", uploadResult.secure_url);
         return uploadResult.secure_url;
     } catch (error) {
         console.error("Error uploading image to Cloudinary:", error);
+        if (error.http_code) {
+            console.error("Cloudinary HTTP error code:", error.http_code);
+        }
         throw error;
     }
 };
