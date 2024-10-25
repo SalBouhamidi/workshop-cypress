@@ -1,6 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import connectDB from "./src/config/dbConfig.js";
+<<<<<<< HEAD
 import {
   authRoutes,
   orderRouter,
@@ -8,6 +9,9 @@ import {
   menuRoutes,
   restaurantRoutes,
 } from "./src/routes/index.js";
+=======
+import { authRoutes, orderRouter, deliveryRouter, menuRoutes } from "./src/routes/index.js";
+>>>>>>> 9de9f3c0733d1fa7fb841b2dcf573615fca0c92d
 import cors from "cors";
 import router from "./src/routes/api.js";
 
@@ -42,10 +46,16 @@ app.get("/test", async (req, res) => {
 // Middleware
 app.use(express.json());
 app.use("/api/auth", authRoutes);
+<<<<<<< HEAD
 app.use("/api/restaurants", restaurantRoutes);
 app.use("/api/order", orderRouter);
 app.use("/api/delivery", deliveryRouter);
 app.use("/api", router);
+=======
+app.use("/api/order", orderRouter)
+app.use("/api/delivery", deliveryRouter)
+app.use("/api", router)
+>>>>>>> 9de9f3c0733d1fa7fb841b2dcf573615fca0c92d
 app.use("/api/menus", menuRoutes);
 
 // Error handling middleware
