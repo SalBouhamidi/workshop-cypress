@@ -10,6 +10,7 @@ import PublicRoute from "@/layouts/PublicRoute";
 import Home from "@/pages/Home";
 import DashboardLayout from "@/layouts/DashboardLayout";
 import HomePage from "@/pages/dashboard/HomePage";
+import OrdersPage from "@/pages/dashboard/OrdersPage";
 
 const AppRouter = createBrowserRouter([
   {
@@ -61,6 +62,10 @@ const AppRouter = createBrowserRouter([
       {
         path: '/dashboard/home',
         element: <HomePage />
+      },
+      {
+        path: '/dashboard/orders',
+        element: <OrdersPage />
       }
     ]
   },

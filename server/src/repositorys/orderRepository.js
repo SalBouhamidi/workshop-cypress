@@ -1,27 +1,34 @@
 import Order from "../models/orderModel.js";
 
-export const getAllOrders = async () => {
+export const getAllOrders = async (managerId) => {
     try {
+        // const managerId = '67160f9491bd03f2de2030c0'
         const orders = await Order.find().populate({
-            path: 'clientId', // Populating the client
+            path: 'restaurantId', 
+            select: '_id name address managerId', 
+            match: { managerId: managerId }
+        }).populate({
+            path: 'clientId', 
+            select: '_id userName' 
         })
-            .exec();
-        return orders;
+        .exec();
+        const filteredOrders = orders.filter(order => order.restaurantId !== null);
+        return filteredOrders;
     } catch (err) {
         throw err
     }
 }
 
 export const findOrderById = async (orderId) => {
-    try{
+    try {
         const order = await Order.findById({ _id: orderId });
-        if(!order){
+        if (!order) {
             const error = new Error('Order not found');
             error.status = 404;
             throw error
         }
         return order;
-    }catch(err){
+    } catch (err) {
         if (err.name === 'CastError') {
             const error = new Error('Invalid Order ID format');
             error.status = 400;
@@ -32,24 +39,24 @@ export const findOrderById = async (orderId) => {
 }
 
 export const changeOrderStatus = async (order, status) => {
-    try{
+    try {
         order.status = status;
         await order.save();
-    }catch(err){
+    } catch (err) {
         throw err
     }
 }
 
 export const deletedOrder = async (order) => {
-    try{
+    try {
         const deletedOrder = await Order.findById({ _id: order });
-        if(!deletedOrder){
+        if (!deletedOrder) {
             const error = new Error('Order not found');
             error.status = 401
             throw error;
         }
         await deletedOrder.deleteOne({ _id: order });
-    }catch(err){
+    } catch (err) {
         if (err.name === 'CastError') {
             const error = new Error('Invalid Order ID format');
             error.status = 400;
