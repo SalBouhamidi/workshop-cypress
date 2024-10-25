@@ -19,7 +19,6 @@ const AppRouter = createBrowserRouter([
       {
         element: <PrivateRoute />,
         children: [
-
           {
             path: "/profile",
             element: <Profile />,

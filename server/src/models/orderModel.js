@@ -1,7 +1,15 @@
 import mongoose from "mongoose";
 
 const orderSchema = new mongoose.Schema({
+<<<<<<< HEAD
+  clientId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
+=======
   clientId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+>>>>>>> 9de9f3c0733d1fa7fb841b2dcf573615fca0c92d
   restaurantId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "Restaurant",
