@@ -1,6 +1,7 @@
 import { Outlet } from "react-router-dom";
 import NavBar from "./NavBar";
 import { Toaster } from "sonner";
+import Footer from "./Footer"
 
 const DefaultLayout = () => {
   return (
@@ -21,6 +22,8 @@ const DefaultLayout = () => {
       />
       <NavBar />
       <Outlet />
+      <Footer/>
+
     </main>
   );
 };

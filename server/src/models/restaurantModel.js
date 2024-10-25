@@ -9,7 +9,11 @@ const restaurantSchema = new Schema({
   },
   categoryIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
   menuId: { type: mongoose.Schema.Types.ObjectId, ref: "Menu", default: null },
-  managerId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
+  managerId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+    required: true,
+  },
   createdAt: { type: Date, default: Date.now },
 });
 

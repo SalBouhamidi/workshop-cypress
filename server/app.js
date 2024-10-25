@@ -21,7 +21,6 @@ app.use(
   })
 );
 
-
 app.get("/test", async (req, res) => {
   res.json({
     success: true,
@@ -41,9 +40,10 @@ app.get("/test", async (req, res) => {
 // Middleware
 app.use(express.json());
 app.use("/api/auth", authRoutes);
-app.use("/api/order", orderRouter)
-app.use("/api/delivery", deliveryRouter)
-app.use("/api", router)
+app.use("/api/restaurants", restaurantRoutes);
+app.use("/api/order", orderRouter);
+app.use("/api/delivery", deliveryRouter);
+app.use("/api", router);
 app.use("/api/menus", menuRoutes);
 
 // Error handling middleware
@@ -51,14 +51,12 @@ app.use((err, req, res, next) => {
   res.status(err.status || 500).json({ error: err.message });
 });
 
-const port = process.env.PORT || 3000; 
+const port = process.env.PORT || 3000;
 
 app.listen(port, () => {
   console.log("Server is running on port: " + port);
 });
 
-
 connectDB();
-
 
 export default app;
