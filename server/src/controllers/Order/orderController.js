@@ -5,7 +5,7 @@ import { sendNotification } from "../../services/notificationService.js";
 
 export const getOders = async (req, res) => {
     try{
-        const response = await getAllOrders();
+        const response = await getAllOrders('67160f9491bd03f2de2030c0');
         return res.status(200).json({
             orders: response
         })

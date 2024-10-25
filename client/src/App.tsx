@@ -14,6 +14,8 @@ import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { currentUser } from "./store/slices/authSlice";
 import { ThemeProvider } from "@/components/theme-provider";
+import { AppDispatch } from "./store/index"
+import { Toaster } from 'react-hot-toast'
 import { AppDispatch } from "./store/index";
 
 function App() {
@@ -55,6 +57,10 @@ function App() {
       ) : (
         <RouterProvider router={AppRouter} />
       )}
+      <Toaster
+        position="top-right"
+        reverseOrder={false}
+      />
     </ThemeProvider>
   );
 }
