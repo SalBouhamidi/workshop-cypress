@@ -1,15 +1,21 @@
 import express from "express";
 import "dotenv/config";
 import connectDB from "./src/config/dbConfig.js";
-import { authRoutes, orderRouter, deliveryRouter, menuRoutes, restaurantRoutes } from "./src/routes/index.js";
+import {
+  authRoutes,
+  orderRouter,
+  deliveryRouter,
+  menuRoutes,
+  restaurantRoutes,
+  userRoutes,
+} from "./src/routes/index.js";
 import cors from "cors";
 import router from "./src/routes/api.js";
 
 const app = express();
 
-app.use(express.json({limit: '50mb'}));
-app.use(express.urlencoded({limit: '50mb', extended: true}));
-
+app.use(express.json({ limit: "50mb" }));
+app.use(express.urlencoded({ limit: "50mb", extended: true }));
 
 const allowedOrigins = [process.env.FRONT_END, process.env.RONT_END_2];
 
@@ -45,6 +51,7 @@ app.use("/api/order", orderRouter);
 app.use("/api/delivery", deliveryRouter);
 app.use("/api", router);
 app.use("/api/menus", menuRoutes);
+app.use("/api/users", userRoutes);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
