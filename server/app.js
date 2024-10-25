@@ -1,7 +1,7 @@
 import express from "express";
 import "dotenv/config";
 import connectDB from "./src/config/dbConfig.js";
-import { authRoutes, orderRouter, deliveryRouter, menuRoutes } from "./src/routes/index.js";
+import { authRoutes, orderRouter, deliveryRouter, menuRoutes, restaurantRoutes } from "./src/routes/index.js";
 import cors from "cors";
 import router from "./src/routes/api.js";
 
