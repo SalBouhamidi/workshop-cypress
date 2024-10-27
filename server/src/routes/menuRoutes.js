@@ -20,7 +20,7 @@ router.get("/:restaurantId/:itemName", ShowMenuItem); // Display menu item by re
 // Protected Routes (Only Managers can access)
 router.post("/store-menu", StoreMenu); // Create a new menu
 // , authMiddleware, managerMiddleware
-router.post(
+router.put(
   "/:restaurantId/update-menu",
   // authMiddleware,
   // managerMiddleware,

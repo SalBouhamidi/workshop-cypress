@@ -292,28 +292,25 @@ const DeleteMenu = async (req, res) => {
   try {
     const itemId = req.params.itemId;
 
-    // Validate and convert `itemId` to an ObjectId
     if (!mongoose.Types.ObjectId.isValid(itemId)) {
       return res.status(400).json({ message: "Invalid item ID format." });
     }
 
     const convertedItemId = new mongoose.Types.ObjectId(itemId);
 
-    // Attempt to delete the menu item using `$pull`
     const updatedMenu = await Menu.findOneAndUpdate(
-      { "items._id": convertedItemId }, // Match the item in the array
-      { $pull: { items: { _id: convertedItemId } } }, // Pull from the array
-      { new: true } // Return the updated document
+      { "items._id": convertedItemId },
+      { $pull: { items: { _id: convertedItemId } } },
+      { new: true }
     );
 
-    // If no document is found, send a 404 response
     if (!updatedMenu) {
       return res.status(404).json({ message: "No menu found." });
     }
 
     return res.status(200).json({ message: "Menu item deleted successfully." });
   } catch (error) {
-    console.error("Error deleting menu item:", error); // Detailed error log
+    console.error("Error deleting menu item:", error);
     return res
       .status(500)
       .json({ message: "Error deleting menu item.", error });
