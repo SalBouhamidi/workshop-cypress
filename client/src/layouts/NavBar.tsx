@@ -21,12 +21,12 @@ const NavBar = () => {
 
   return (
     <>
-    <nav className="bg-white shadow-md border border-b-gray-300 dark:bg-black dark:border-b-white/25">
+    <nav className="bg-black shadow-md border border-b-gray-300 dark:bg-black dark:border-b-white/25">
       <div className="max-w-7xl  mx-auto px-4">
         <div className="flex justify-between h-16">
           <div className="flex-shrink-0 flex items-center">
-            <Link to="/" className="font-bold text-xl text-primary">
-              Logo
+            <Link to="/" className="font-bold text-xl text-red-500">
+              AMG
             </Link>
           </div>
           <div className="flex items-center gap-2">
@@ -58,9 +58,9 @@ const NavBar = () => {
               ) : (
                 <>
                   <Link to={"/login"} className="cursor-pointer">
-                    <Button variant="ghost">
-                      <LogIn className="mr-2 h-4 w-4" />
-                      Log in
+                    <Button variant="ghost" className="text-red-500 hover:bg-red-600 hover:text-red-50">
+                      <LogIn className="mr-2 h-4 w-4 " />
+                      <span > Log in</span>          
                     </Button>
                   </Link>
                   <Link to={"/signup"} className="cursor-pointer">
