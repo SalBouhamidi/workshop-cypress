@@ -6,6 +6,7 @@ import restaurantController from "../controllers/User/restaurantController.js";
 
 //restaurant Search : 
 router.get('/search', restaurantController.search);
+router.get('/categories', restaurantController.Category)
 
 
 

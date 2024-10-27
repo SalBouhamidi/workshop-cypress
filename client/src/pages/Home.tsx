@@ -5,11 +5,12 @@ import PopularDishes from "../components/Home/popularDishes"
 import CallToAction from "../components/Home/callToAction";
 import BestRestaurant from "../components/Home/bestRestaurant"
 import DownloadApp from "../components/Home/DownloadApp"
-
+import Searchbar from "@/components/Home/SearchBar";
 const Home = () => {
   return (
     <>
     <Herosection/>
+    <Searchbar/>
     <SomeOrders/>
     <AboutUs/>
     <PopularDishes/>
