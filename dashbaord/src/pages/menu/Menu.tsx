@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import * as Yup from 'yup';
 import { ToastContainer, toast } from 'react-toastify';
@@ -10,6 +10,7 @@ interface Image {
 }
 
 interface MenuItem {
+    _id?: string;
     name: string;
     description: string;
     price: number;
@@ -33,18 +34,28 @@ interface Menu {
     updatedAt: string;
 }
 
-const validationSchema = Yup.object().shape({
+// Validation Schema
+const storeValidationSchema = Yup.object().shape({
     restaurantId: Yup.string().required('Restaurant is required'),
     name: Yup.string().required('Name is required'),
     description: Yup.string().required('Description is required'),
     price: Yup.number().required('Price is required').positive('Price must be positive'),
     available: Yup.boolean().required('Availability is required'),
     images: Yup.array()
-        .of(
-            Yup.object().shape({
-                data: Yup.string().required('Image is required'),
-            })
-        )
+        .of(Yup.object().shape({ data: Yup.string().required('Image is required') }))
+        .min(1, 'At least one image is required')
+        .max(5, 'You can upload up to 5 images only')
+        .required('Images are required'),
+});
+const updateValidationSchema = Yup.object().shape({
+    menuId: Yup.string().required('Menu ID is required'),
+    restaurantId: Yup.string().required('Restaurant is required'),
+    name: Yup.string().required('Name is required'),
+    description: Yup.string().required('Description is required'),
+    price: Yup.number().required('Price is required').positive('Price must be positive'),
+    available: Yup.boolean().required('Availability is required'),
+    images: Yup.array()
+        .of(Yup.object().shape({ data: Yup.string().required('Image is required') }))
         .min(1, 'At least one image is required')
         .max(5, 'You can upload up to 5 images only')
         .required('Images are required'),
@@ -53,8 +64,8 @@ const validationSchema = Yup.object().shape({
 const Menu = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [editItem, setEditItem] = useState<MenuItem | null>(null);
     const [isAllChecked, setIsAllChecked] = useState(false);
-
     const [menus, setMenus] = useState<Menu[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [restaurantId, setRestaurantId] = useState<string>('');
@@ -65,48 +76,61 @@ const Menu = () => {
         available: false,
         images: [],
     });
-
-    const [error, setError] = useState<string | null>(null);
-    const [errors, setErrors] = useState({});
+    const [selectedMenuId, setSelectedMenuId] = useState<string | null>(null);
+    const [errors, setErrors] = useState<{ [key: string]: string }>({});
     const [loading, setLoading] = useState<boolean>(true);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(0);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [totalItems, setTotalItems] = useState(0);
-    const [openDropdownId, setOpenDropdownId] = useState(null);
+    const [openDropdownId, setOpenDropdownId] = useState<string | null>(null);
+    const dropdownRef = useRef<HTMLDivElement | null>(null);
+    const [isDeleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [itemToDelete, setItemToDelete] = useState(null);
 
     const toggleCreateModal = () => {
         setIsCreateModalOpen(!isCreateModalOpen);
     };
+
     const toggleEditModal = () => {
         setIsEditModalOpen(!isEditModalOpen);
+        if (isEditModalOpen) {
+            resetForm();
+            setEditItem(null);
+        }
     };
 
-    const handleSelectAll = (e) => {
+    const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         const checked = e.target.checked;
         setIsAllChecked(checked);
-
         const checkboxes = document.querySelectorAll('.table-checkbox');
         checkboxes.forEach((checkbox) => {
-            checkbox.checked = checked;
+            (checkbox as HTMLInputElement).checked = checked;
         });
     };
 
-    const handleInputChange = (e) => {
+    const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, value } = e.target;
         setNewItem((prev) => ({
             ...prev,
-            [name]: name === 'available' ? value === 'true' : value,
+            [name]: name === 'available' ? value === 'true' : name === 'price' ? parseFloat(value) : value,
+        }));
+    };
+    const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+        const { name, value } = e.target;
+        setEditItem((prev) => ({
+            ...prev,
+            [name]: name === 'available' ? value === 'true' : name === 'price' ? parseFloat(value) : value,
         }));
     };
 
-    const handleSelectChange = (e) => {
+    const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const { value } = e.target;
         setRestaurantId(value);
     };
 
-    const handleImageChange = async (e) => {
-        const files = Array.from(e.target.files);
+    const handleImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const files = Array.from(e.target.files || []);
         const imageFiles = files.filter((file) => file instanceof Blob);
 
         const compressionOptions = {
@@ -115,7 +139,7 @@ const Menu = () => {
             useWebWorker: true,
         };
 
-        const compressAndConvertImage = async (file) => {
+        const compressAndConvertImage = async (file: Blob) => {
             try {
                 const compressedFile = await imageCompression(file, compressionOptions);
                 const base64 = await convertBlobToBase64(compressedFile);
@@ -126,108 +150,126 @@ const Menu = () => {
             }
         };
 
-        const imagePromises = imageFiles.map(compressAndConvertImage);
+        const images = await Promise.all(imageFiles.map(compressAndConvertImage));
+        // Filter out any null values from the array
+        const validImages = images.filter(Boolean);
 
-        const images = await Promise.all(imagePromises);
-        setNewItem((prev) => ({ ...prev, images: images.filter(Boolean) }));
+        setNewItem((prev) => ({ ...prev, images: validImages }));
+        setEditItem((prev) => ({ ...prev, images: validImages }));
     };
 
-    const convertBlobToBase64 = (blob) => {
+    const convertBlobToBase64 = (blob: Blob): Promise<string> => {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
-            reader.onloadend = () => resolve(reader.result);
+            reader.onloadend = () => resolve(reader.result as string);
             reader.onerror = reject;
             reader.readAsDataURL(blob);
         });
     };
 
-    // create new menu
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrors({});
 
         try {
-            await validationSchema.validate({ ...newItem, restaurantId }, { abortEarly: false });
+            await storeValidationSchema.validate({ ...newItem, restaurantId }, { abortEarly: false });
 
             const payload = {
                 restaurantId,
                 name: newItem.name,
                 description: newItem.description,
-                price: parseFloat(newItem.price),
+                price: newItem.price,
                 available: newItem.available,
+                images: newItem.images.map((img) => img.data),
             };
 
-            const images = newItem.images.map((img) => img.data);
-
-            const response = await axios.post('http://localhost:3000/api/menus/store-menu', { ...payload, images });
-
-            console.log('Menu saved:', response.data);
+            const response = await axios.post('http://localhost:3000/api/menus/store-menu', payload);
             toast.success('Menu item added successfully!');
-            setNewItem({
-                name: '',
-                description: '',
-                price: 0,
-                available: false,
-                images: [],
-            });
+            resetForm();
             fetchMenus();
             toggleCreateModal();
         } catch (error) {
-            if (error instanceof Yup.ValidationError) {
-                const formErrors = error.inner.reduce((acc, curr) => {
-                    acc[curr.path] = curr.message;
-                    return acc;
-                }, {});
-                setErrors(formErrors);
-                Object.values(formErrors).forEach((errMessage) => {
-                    toast.error(errMessage);
-                });
-            } else {
-                console.error('Error saving menu:', error);
-                toast.error('Failed to save menu.');
-            }
+            handleValidationError(error);
         }
     };
 
-    // Fetch all menus when the component is mounted
-    const fetchMenus = async (page = 1) => {
-        setLoading(true);
+    const handleUpdateSubmit = async (e: React.FormEvent) => {
+        e.preventDefault();
+        setErrors({});
+
+        const payload = {
+            menuId: editItem?._id,
+            restaurantId,
+            name: editItem.name,
+            description: editItem.description,
+            price: editItem.price,
+            available: editItem.available,
+            images: editItem.images.map((img) => img.data),
+        };
+
+        console.log('Payload before validation:', payload);
+
         try {
-            const response = await axios.get(`http://localhost:3000/api/menus?page=${page}&limit=${itemsPerPage}`);
-            // console.log('response:', response.data);
-            setMenus(response.data.menus);
-            setCategories(response.data.categories);
-            setCurrentPage(response.data.pagination.currentPage);
-            setTotalPages(response.data.pagination.totalPages);
-            setItemsPerPage(response.data.pagination.itemsPerPage);
-            setTotalItems(response.data.pagination.totalItems);
-            setError(null);
+            await updateValidationSchema.validate(payload, { abortEarly: false });
+
+            const response = await axios.post(`http://localhost:3000/api/menus/${restaurantId}/update-menu`, payload);
+            // alert(response.data);
+
+            if (response.status === 200) {
+                toast.success('Menu item updated successfully!');
+                fetchMenus();
+            } else {
+                toast.error('Failed to update menu item.');
+            }
         } catch (error) {
-            setError('Failed to fetch menus and categories.');
-            console.error('Error fetching menus:', error);
-        } finally {
-            setLoading(false);
+            handleValidationError(error);
+            toast.error('Failed to update menu item.');
+        }
+    };
+    const handleDelete = async () => {
+        if (!itemToDelete) {
+            console.log('Item to delete is not defined.');
+            return;
+        }
+        try {
+            const response = await axios.delete(`http://localhost:3000/api/menus/delete-menu/${itemToDelete._id}`);
+            console.log(response.data.message);
+            setDeleteModalOpen(false);
+            toast.success('Menu item deleted successfully!');
+            fetchMenus();
+        } catch (error) {
+            console.error('Error deleting menu:', error.response?.data || error);
+            toast.error('Failed to delete menu item.');
         }
     };
 
-    useEffect(() => {
-        fetchMenus();
-    }, []);
+    const toggleEditModalWithItem = (menuIndex: number, itemIndex: number, item: MenuItem) => {
+        console.log('Editing item:', item);
+        setEditItem(item);
+        setNewItem({
+            name: item.name,
+            available: item.available,
+            price: item.price,
+            restaurantId: item.restaurantId,
+            description: item.description,
+            images: item.images || [],
+        });
+        setIsEditModalOpen(true);
+    };
 
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (openDropdownId && !event.target.closest('.dropdown-container')) {
-                setOpenDropdownId(null);
-            }
-        };
-
-        document.addEventListener('mousedown', handleClickOutside);
-
-        return () => {
-            document.removeEventListener('mousedown', handleClickOutside);
-        };
-    }, [openDropdownId]);
-
+    const handleValidationError = (error) => {
+        if (error instanceof Yup.ValidationError) {
+            const validationErrors = {};
+            error.inner.forEach((err) => {
+                validationErrors[err.path] = err.message;
+            });
+            setErrors(validationErrors);
+            console.error('Validation Errors:', validationErrors);
+        } else {
+            toast.error('Failed to save menu.');
+            console.error('Other Error:', error);
+        }
+    };
     const handlePageChange = (newPage: number) => {
         if (newPage >= 1 && newPage <= totalPages) {
             setCurrentPage(newPage);
@@ -235,13 +277,44 @@ const Menu = () => {
         }
     };
 
-    if (loading) {
-        return <div>Loading menus...</div>;
-    }
+    const fetchMenus = async (page = 1) => {
+        setLoading(true);
+        try {
+            const response = await axios.get(`http://localhost:3000/api/menus?page=${page}&limit=${itemsPerPage}`);
+            setMenus(response.data.menus);
+            setCategories(response.data.categories);
+            setCurrentPage(response.data.pagination.currentPage);
+            setTotalPages(response.data.pagination.totalPages);
+            setItemsPerPage(response.data.pagination.itemsPerPage);
+            setTotalItems(response.data.pagination.totalItems);
+        } catch (error) {
+            console.error('Error fetching menus:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-    if (error) {
-        return <div>{error}</div>;
-    }
+    const resetForm = () => {
+        setNewItem({ name: '', description: '', price: 0, available: false, images: [] });
+        setSelectedMenuId(null);
+    };
+
+    useEffect(() => {
+        fetchMenus();
+    }, []);
+
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setOpenDropdownId(null);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => {
+            document.removeEventListener('mousedown', handleClickOutside);
+        };
+    }, []);
+
     return (
         <section className="bg-gray-50 dark:bg-gray-900 py-3 sm:py-5">
             <div className="px-4 mx-auto max-w-screen-2xl lg:px-12">
@@ -334,88 +407,93 @@ const Menu = () => {
                             </thead>
                             <tbody>
                                 {menus.map((menu, menuIndex) =>
-                                    menu.items.map((item, itemIndex) => (
-                                        <tr key={`${menuIndex}-${itemIndex}`} className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
-                                            <td className="w-4 px-4 py-3">
-                                                <div className="flex items-center">
-                                                    <input
-                                                        id={`checkbox-table-search-${menuIndex}-${itemIndex}`}
-                                                        type="checkbox"
-                                                        className="w-4 h-4 bg-gray-100 border-gray-300 rounded text-table_primany-600 focus:ring-table_primany-500 dark:focus:ring-table_primany-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 table-checkbox"
-                                                    />
-                                                    <label htmlFor={`checkbox-table-search-${menuIndex}-${itemIndex}`} className="sr-only">
-                                                        Select
-                                                    </label>
-                                                </div>
-                                            </td>
-                                            <th scope="row" className="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                                                <img src={item.images[0]} alt={item.name} className="w-10 h-8 mr-3 object-cover rounded-lg" />
-                                                {item.name}
-                                            </th>
-                                            <td className="px-4 py-2">
-                                                {menu.restaurantId.categoryIds.map((categoryId) => {
-                                                    const category = categories.find((cat) => cat._id === categoryId);
-                                                    return (
-                                                        <span
-                                                            key={categoryId}
-                                                            className="bg-table_primany-100 text-table_primany-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-table_primany-900 dark:text-table_primany-300 mr-1.5"
-                                                        >
-                                                            {category ? category.name : 'Unknown Category'}
-                                                        </span>
-                                                    );
-                                                })}
-                                            </td>
-                                            <td className="px-4 py-2">
-                                                <span
-                                                    className={`text-xs font-medium px-2 py-0.5 rounded ${
-                                                        item.available
-                                                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
-                                                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300'
-                                                    }`}
-                                                >
-                                                    {item.available ? 'Available' : 'Not Available'}
-                                                </span>
-                                            </td>
-                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.price}</td>
-                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.restaurantId.name}</td>
-                                            <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.updatedAt}</td>
-                                            <td className="px-4 py-3 flex items-center justify-end">
-                                                <button
-                                                    id={`${menuIndex}-${itemIndex}`}
-                                                    onClick={() => setOpenDropdownId(openDropdownId === `${menuIndex}-${itemIndex}` ? null : `${menuIndex}-${itemIndex}`)}
-                                                    className="inline-flex items-center p-0.5 text-sm font-medium text-center text-gray-500 hover:text-gray-800 rounded-lg focus:outline-none dark:text-gray-400 dark:hover:text-gray-100"
-                                                    type="button"
-                                                >
-                                                    <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
-                                                        <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
-                                                    </svg>
-                                                </button>
-                                                {openDropdownId === `${menuIndex}-${itemIndex}` && (
-                                                    <div className="absolute right-0 mt-2 w-44 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600">
-                                                        <ul className="py-1 text-sm text-gray-700 dark:text-gray-200" aria-labelledby={`${menuIndex}-${itemIndex}`}>
-                                                            <li>
-                                                                <button  className="block py-2 px-4 w-full text-left hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                                                                    Show
-                                                                </button>
-                                                            </li>
-                                                            <li>
-                                                                <button className="block py-2 px-4 w-full text-left hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
-                                                                    Edit
-                                                                </button>
-                                                            </li>
-                                                        </ul>
-                                                        <div className="py-1">
-                                                            <button
-                                                                className="block py-2 px-4 w-full text-left text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
-                                                            >
-                                                                Delete
-                                                            </button>
-                                                        </div>
+                                    menu.items.map((item, itemIndex) => {
+                                        const uniqueId = `${menuIndex}-${itemIndex}`;
+                                        const isAvailable = item.available;
+                                        const availabilityClass = isAvailable
+                                            ? 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300'
+                                            : 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300';
+
+                                        return (
+                                            <tr key={uniqueId} className="border-b dark:border-gray-600 hover:bg-gray-100 dark:hover:bg-gray-700">
+                                                <td className="w-4 px-4 py-3">
+                                                    <div className="flex items-center">
+                                                        <input
+                                                            id={`checkbox-table-search-${menuIndex}-${itemIndex}`}
+                                                            type="checkbox"
+                                                            className="w-4 h-4 bg-gray-100 border-gray-300 rounded text-table_primany-600 focus:ring-table_primany-500 dark:focus:ring-table_primany-600 dark:ring-offset-gray-800 focus:ring-2 dark:bg-gray-700 dark:border-gray-600 table-checkbox"
+                                                        />
+                                                        <label htmlFor={`checkbox-table-search-${menuIndex}-${itemIndex}`} className="sr-only">
+                                                            Select
+                                                        </label>
                                                     </div>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    ))
+                                                </td>
+                                                <th scope="row" className="flex items-center px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                                                    <img src={item.images[0]} alt={item.name} className="w-10 h-8 mr-3 object-cover rounded-lg" />
+                                                    {item.name}
+                                                </th>
+                                                <td className="px-4 py-2">
+                                                    {menu.restaurantId.categoryIds.map((categoryId) => {
+                                                        const category = categories.find((cat) => cat._id === categoryId);
+                                                        return (
+                                                            <span
+                                                                key={categoryId}
+                                                                className="bg-table_primany-100 text-table_primany-800 text-xs font-medium px-2 py-0.5 rounded dark:bg-table_primany-900 dark:text-table_primany-300 mr-1.5"
+                                                            >
+                                                                {category ? category.name : 'Unknown Category'}
+                                                            </span>
+                                                        );
+                                                    })}
+                                                </td>
+                                                <td className="px-4 py-2">
+                                                    <span className={`text-xs font-medium px-2 py-0.5 rounded ${availabilityClass}`}>{isAvailable ? 'Available' : 'Not Available'}</span>
+                                                </td>
+                                                <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">${item.price}</td>
+                                                <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{menu.restaurantId.name}</td>
+                                                <td className="px-4 py-2 font-medium text-gray-900 whitespace-nowrap dark:text-white">{item.updatedAt}</td>
+                                                <td className="px-4 py-3 flex items-center justify-end">
+                                                    <button
+                                                        id={uniqueId}
+                                                        onClick={() => setOpenDropdownId(openDropdownId === uniqueId ? null : uniqueId)}
+                                                        className="inline-flex items-center p-0.5 text-sm font-medium text-center text-gray-500 hover:text-gray-800 rounded-lg focus:outline-none dark:text-gray-400 dark:hover:text-gray-100"
+                                                        type="button"
+                                                    >
+                                                        <svg className="w-5 h-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                                            <path d="M6 10a2 2 0 11-4 0 2 2 0 014 0zM12 10a2 2 0 11-4 0 2 2 0 014 0zM16 12a2 2 0 100-4 2 2 0 000 4z" />
+                                                        </svg>
+                                                    </button>
+                                                    {openDropdownId === uniqueId && (
+                                                        <div className="absolute right-0 mt-2 w-44 bg-white rounded divide-y divide-gray-100 shadow dark:bg-gray-700 dark:divide-gray-600">
+                                                            <ul className="py-1 text-sm text-gray-700 dark:text-gray-200" aria-labelledby={uniqueId}>
+                                                                <li>
+                                                                    <button className="block py-2 px-4 w-full text-left hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">Show</button>
+                                                                </li>
+                                                                <li>
+                                                                    <button
+                                                                        onClick={() => toggleEditModalWithItem(menuIndex, itemIndex, item)}
+                                                                        className="block py-2 px-4 w-full text-left hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
+                                                                    >
+                                                                        Edit
+                                                                    </button>
+                                                                </li>
+                                                            </ul>
+                                                            <div className="py-1">
+                                                                <button
+                                                                    onClick={() => {
+                                                                        setItemToDelete(item);
+                                                                        setDeleteModalOpen(true);
+                                                                    }}
+                                                                    className="block py-2 px-4 w-full text-left text-sm text-gray-700 hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white"
+                                                                >
+                                                                    Delete
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        );
+                                    })
                                 )}
                             </tbody>
                         </table>
@@ -607,7 +685,7 @@ const Menu = () => {
                 </div>
             )}
             {/* edit modal */}
-            {/* {isModalOpen && (
+            {isEditModalOpen && editItem && (
                 <div id="editModal" tabIndex="-1" aria-hidden="true" className="fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-gray-900 bg-opacity-50 backdrop-blur-sm">
                     <div className="relative p-4 w-full max-w-2xl h-full md:h-auto">
                         <div className="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
@@ -616,7 +694,7 @@ const Menu = () => {
                                 <button
                                     type="button"
                                     className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                                    onClick={toggleModal}
+                                    onClick={toggleEditModal}
                                 >
                                     <svg aria-hidden="true" className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path
@@ -628,7 +706,8 @@ const Menu = () => {
                                     <span className="sr-only">Close modal</span>
                                 </button>
                             </div>
-                            <form onSubmit={handleSubmit} encType="multipart/form-data">
+                            <form onSubmit={handleUpdateSubmit} encType="multipart/form-data">
+                                <input type="hidden" name="menuId" value={editItem._id} />
                                 <div className="grid gap-4 mb-4 sm:grid-cols-2">
                                     <div>
                                         <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -640,8 +719,8 @@ const Menu = () => {
                                             id="name"
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                             placeholder="Type menu item name"
-                                            value={newItem.name}
-                                            onChange={handleInputChange}
+                                            value={editItem.name}
+                                            onChange={handleEditInputChange}
                                             required
                                         />
                                         {errors.name && <p className="text-red-600 text-sm mt-1 ml-0.5">{errors.name.message}</p>}
@@ -653,7 +732,8 @@ const Menu = () => {
                                         <select
                                             id="available"
                                             name="available"
-                                            onChange={handleInputChange}
+                                            onChange={handleEditInputChange}
+                                            value={editItem.available.toString()}
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         >
                                             <option value={false}>Not Available</option>
@@ -670,8 +750,8 @@ const Menu = () => {
                                             id="price"
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                             placeholder="$29"
-                                            value={newItem.price}
-                                            onChange={handleInputChange}
+                                            value={editItem.price}
+                                            onChange={handleEditInputChange}
                                             required
                                         />
                                     </div>
@@ -704,8 +784,8 @@ const Menu = () => {
                                             rows="4"
                                             className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                             placeholder="Write menu item description here"
-                                            value={newItem.description}
-                                            onChange={handleInputChange}
+                                            value={editItem.description}
+                                            onChange={handleEditInputChange}
                                             required
                                         ></textarea>
                                     </div>
@@ -731,13 +811,56 @@ const Menu = () => {
                                     <svg className="mr-1 -ml-1 w-6 h-6" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path fillRule="evenodd" d="M10 5a1 1 0 011 1v3h3a1 1 0 110 2h-3v3a1 1 0 11-2 0v-3H6a1 1 0 110-2h3V6a1 1 0 011-1z" clipRule="evenodd"></path>
                                     </svg>
-                                    Edit new menu
+                                    Edit menu
                                 </button>
                             </form>
                         </div>
                     </div>
                 </div>
-            )} */}
+            )}
+            {/* delete modal */}
+            {isDeleteModalOpen && (
+                <div
+                    id="deleteModal"
+                    className="fixed top-0 right-0 left-0 z-50 flex items-center justify-center w-full h-full overflow-y-auto bg-black bg-opacity-50"
+                    onClick={() => setDeleteModalOpen(false)}
+                >
+                    <div className="relative p-4 w-full max-w-md h-full md:h-auto">
+                        <div className="relative p-4 text-center bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
+                            <button type="button" className="absolute top-2.5 right-2.5 text-gray-400" onClick={() => setDeleteModalOpen(false)}>
+                                <svg aria-hidden="true" className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
+                                    <path
+                                        fillRule="evenodd"
+                                        d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                        clipRule="evenodd"
+                                    />
+                                </svg>
+                            </button>
+                            <p className="mb-4 text-gray-500 dark:text-gray-300">Are you sure you want to delete this item?</p>
+                            <div className="flex justify-center items-center space-x-4">
+                                <button
+                                    onClick={() => setDeleteModalOpen(false)}
+                                    type="button"
+                                    className="py-2 px-3 text-sm font-medium text-gray-500 bg-white rounded-lg border border-gray-200 hover:bg-gray-100"
+                                >
+                                    No, cancel
+                                </button>
+                                <button
+                                    onClick={() => {
+                                        handleDelete();
+                                        setDeleteModalOpen(false);
+                                    }}
+                                    type="button"
+                                    className="py-2 px-3 text-sm font-medium text-center text-white bg-red-600 rounded-lg hover:bg-red-700"
+                                >
+                                    Yes, I'm sure
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <ToastContainer />
         </section>
     );

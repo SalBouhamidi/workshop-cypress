@@ -1,5 +1,5 @@
 import { validateSignUp } from "./signUpSchema/validateSignUp.js";
-import { validateStoreMenu } from "./storeMenuSchema.js";
-import { validateUpdateMenu } from "./updateMenuSchema.js";
+import { validateMenu } from "./manuValidation/menuSchema.js";
+import { validateUpdateMenu } from "./manuValidation/updateMenuSchema.js";
 
-export { validateSignUp, validateStoreMenu, validateUpdateMenu};
+export { validateSignUp, validateMenu, validateUpdateMenu};

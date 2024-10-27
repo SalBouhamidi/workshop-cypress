@@ -2,10 +2,10 @@ import mongoose from "mongoose";
 import Menu from "../../models/menuModel.js";
 import Restaurant from "../../models/restaurantModel.js";
 import Category from "../../models/categoryModel.js";
-import { validateStoreMenu } from "../../validations/manuValidation/storeMenuSchema.js";
-import { validateUpdateMenu } from "../../validations/manuValidation/updateMenuSchema.js";
 
 import { uploadImage } from "../../services/cloudinaryService.js";
+import { validateMenu } from "../../validations/manuValidation/menuSchema.js";
+import { validateUpdateMenu } from "../../validations/manuValidation/updateMenuSchema.js";
 
 // Fetching all menus with categories
 const Menus = async (req, res) => {
@@ -168,7 +168,7 @@ const StoreMenu = async (req, res) => {
       req.body;
 
     // Validate input
-    const { error } = validateStoreMenu(req.body);
+    const { error } = validateMenu(req.body);
     if (error) {
       return res
         .status(400)
@@ -219,13 +219,14 @@ const StoreMenu = async (req, res) => {
   }
 };
 
-// Updating menu
+// update menu
 const UpdateMenu = async (req, res) => {
   try {
-    const { restaurantName } = req.params;
-    const { items } = req.body;
-
-    // Validate data
+    const { restaurantId } = req.params;
+    const { menuId, name, description, price, available, images } = req.body;
+    // console.log("Received body:", req.body);
+    console.log("Images:", req.body.images);
+    // Validate input
     const { error } = validateUpdateMenu(req.body);
     if (error) {
       return res
@@ -233,13 +234,24 @@ const UpdateMenu = async (req, res) => {
         .json({ message: "Validation error", details: error.details });
     }
 
-    // Finding the restaurant by name
-    const restaurant = await Restaurant.findOne({ name: restaurantName });
+    // Validate that `restaurantId` is a valid MongoDB ObjectId
+    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
+      return res.status(400).json({ message: "Invalid restaurant ID." });
+    }
+
+    // Check if the restaurant exists
+    let restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
       return res.status(404).json({ message: "Restaurant not found." });
     }
 
-    // Finding the menu associated with the restaurant
+    // Process images
+    let imageUrls = [];
+    if (images && images.length > 0) {
+      imageUrls = await Promise.all(images.map(uploadImage));
+    }
+
+    // Find the menu item associated with the restaurant and update it
     const menu = await Menu.findOne({ restaurantId: restaurant._id });
     if (!menu) {
       return res
@@ -247,48 +259,64 @@ const UpdateMenu = async (req, res) => {
         .json({ message: "Menu not found for this restaurant." });
     }
 
-    // Updating the menu items
-    menu.items = items; // This will now include images as well
-    menu.updatedAt = Date.now();
+    // Find the specific item to update by menuId
+    const itemIndex = menu.items.findIndex(
+      (item) => item._id.toString() === menuId
+    );
+    if (itemIndex === -1) {
+      return res.status(404).json({ message: "Menu item not found." });
+    }
 
-    const updatedMenu = await menu.save();
+    // Update the item
+    menu.items[itemIndex] = {
+      ...menu.items[itemIndex],
+      name,
+      description,
+      price,
+      available,
+      images: imageUrls.length > 0 ? imageUrls : menu.items[itemIndex].images,
+    };
 
-    return res.status(200).json(updatedMenu);
+    const savedMenu = await menu.save();
+    res
+      .status(200)
+      .json({ message: "Menu updated successfully", updatedMenu: savedMenu });
   } catch (error) {
     console.error("Error updating menu:", error);
-    return res.status(500).json({ message: "Internal server error." });
+    res.status(500).json({ message: "Internal server error." });
   }
 };
 
 // Deleting menu
 const DeleteMenu = async (req, res) => {
   try {
-    const { restaurantName } = req.params;
+    const itemId = req.params.itemId;
 
-    const restaurant = await Restaurant.findOne({ name: restaurantName });
-
-    if (!restaurant) {
-      return res
-        .status(404)
-        .json({ message: "Sorry, we couldn't find that restaurant." });
+    // Validate and convert `itemId` to an ObjectId
+    if (!mongoose.Types.ObjectId.isValid(itemId)) {
+      return res.status(400).json({ message: "Invalid item ID format." });
     }
 
-    const deletedMenu = await Menu.findOneAndDelete({
-      restaurantId: restaurant._id,
-    });
+    const convertedItemId = new mongoose.Types.ObjectId(itemId);
 
-    if (!deletedMenu) {
-      return res
-        .status(404)
-        .json({ message: "No menu found for this restaurant." });
+    // Attempt to delete the menu item using `$pull`
+    const updatedMenu = await Menu.findOneAndUpdate(
+      { "items._id": convertedItemId }, // Match the item in the array
+      { $pull: { items: { _id: convertedItemId } } }, // Pull from the array
+      { new: true } // Return the updated document
+    );
+
+    // If no document is found, send a 404 response
+    if (!updatedMenu) {
+      return res.status(404).json({ message: "No menu found." });
     }
 
-    return res.status(200).json({ message: "Menu deleted successfully." });
+    return res.status(200).json({ message: "Menu item deleted successfully." });
   } catch (error) {
-    console.error("Error deleting menu:", error);
+    console.error("Error deleting menu item:", error); // Detailed error log
     return res
       .status(500)
-      .json({ message: "Oops! Something went wrong while deleting the menu." });
+      .json({ message: "Error deleting menu item.", error });
   }
 };
 
