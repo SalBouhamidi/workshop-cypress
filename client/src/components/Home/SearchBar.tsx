@@ -3,6 +3,7 @@ import axios from "axios"
 import offerBG2_2 from "../../assets/img/bg/offerBG2_2.jpg"
 import offerShape1_4 from "../../assets/img/shape/offerShape1_4.png"
 import offerThumb1_3 from "../../assets/img/offer/offerThumb1_3.png"
+import {toast} from "sonner"
 
 
 
@@ -49,6 +50,7 @@ export default function Searchbar() {
                         setSearchResult(null);
                     }
                 } catch (error) {
+                    toast.error(error.response.data.message)
                     console.log(error.response.data.message);
                     setSearchResult(null);
                 }
@@ -65,6 +67,7 @@ export default function Searchbar() {
                     }
 
                 } catch (err) {
+                    toast.error(err.response.data)
                     console.log(err.response.data);
                     setSearchResult(null);
                 }
@@ -80,11 +83,13 @@ export default function Searchbar() {
                     }
 
                 } catch (err) {
+                    toast.error(err.response.data.message);
                     console.log(err.response.data.message);
                     setSearchResult(null);
                 }
             }
             if (selectedCategory == '' && selectedRestau == '') {
+                toast.error('please choose category or name of restaurant');
                 console.log('please choose category or name of restaurant')
             }
         } catch (e) {
