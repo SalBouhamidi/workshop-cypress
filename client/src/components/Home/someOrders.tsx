@@ -45,7 +45,7 @@ export default function SomeOrders() {
                                                 alt="shape"/></div>
                                     </div>
                                 </div>
-                            </div>
+                            </div>       
                             <div className="col-lg-6 col-xl-4">
                                 <div className="offer-card style1  wow fadeInUp" data-wow-delay="0.7s"
                                     style={{backgroundImage: `url(${offerBG2_3})`}}>

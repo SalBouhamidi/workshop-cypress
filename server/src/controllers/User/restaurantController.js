@@ -4,7 +4,15 @@ import Category from '../../models/categoryModel.js';
 
 class restaurantController{
 
+    async Category(req, res){
+      try{
+        let categories = await Category.find();
+        return res.json({categories});
+      }catch(e){
+        return res.json({message: "There's smth bad happened"})
+      }
 
+    }
     async search(req, res){
         try {
             const { name, cuisine, city } = req.query;
@@ -30,7 +38,7 @@ class restaurantController{
             if(restaurants.length > 0){
               return res.status(200).json(restaurants);
             }else{
-              return res.status(403).json({"message": "There's no restaurants available"});
+              return res.status(404).json({"message": "There's no restaurants available"});
             }
           } catch (error) {
             console.error(error);
