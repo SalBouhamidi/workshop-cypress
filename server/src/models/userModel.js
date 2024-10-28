@@ -1,4 +1,5 @@
-import { model, Schema } from "mongoose";
+import mongoose from "mongoose";
+const { Schema, model } = mongoose;
 
 const userSchema = new Schema(
   {
@@ -7,9 +8,9 @@ const userSchema = new Schema(
     userName: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     email: { type: String, required: true, unique: true },
+    roleId: { type: Schema.Types.ObjectId, ref: 'Role', default: '67160f42aa15f88cfe635264' },
     PhoneNumber: String,
     Address: String,
-    role: { type: String, required: true, default: "user" },
     resetToken: String,
     resetTokenExpiration: String,
     twoStepVerification: { type: Boolean, default: false },
@@ -19,4 +20,4 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
-export default model("User", userSchema);
+export default mongoose.model("User", userSchema);

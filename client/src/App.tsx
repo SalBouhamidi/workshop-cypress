@@ -1,11 +1,22 @@
 import { RouterProvider } from "react-router-dom";
 import "./App.css";
+import 'bootstrap/dist/css/bootstrap.min.css';
+import './assets/css/all.min.css';
+import './assets/css/animate.css';
+import './assets/css/bootstrap.min.css';
+import './assets/css/magnific-popup.css';
+import './assets/css/main.css';
+import './assets/css/meanmenu.css';
+import './assets/css/nice-select.css';
+import './assets/css/swiper-bundle.min.css';
 import AppRouter from "./router/AppRouter";
 import { useDispatch } from "react-redux";
 import { useEffect, useState } from "react";
 import { currentUser } from "./store/slices/authSlice";
 
 import { ThemeProvider } from "@/components/theme-provider";
+import { AppDispatch } from "./store/index";
+import { Toaster } from "react-hot-toast";
 
 function App() {
   const dispatch = useDispatch<AppDispatch>();
@@ -46,6 +57,7 @@ function App() {
       ) : (
         <RouterProvider router={AppRouter} />
       )}
+      <Toaster position="top-right" reverseOrder={false} />
     </ThemeProvider>
   );
 }

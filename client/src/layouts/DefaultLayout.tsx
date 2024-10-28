@@ -1,10 +1,11 @@
 import { Outlet } from "react-router-dom";
 import NavBar from "./NavBar";
 import { Toaster } from "sonner";
+import Footer from "./Footer"
 
 const DefaultLayout = () => {
   return (
-    <main className="bg-gray-200 min-h-screen dark:bg-black">
+    <main className="bg-stone-200 min-h-screen dark:bg-black">
       <Toaster
         position="bottom-right"
         closeButton
@@ -21,6 +22,8 @@ const DefaultLayout = () => {
       />
       <NavBar />
       <Outlet />
+      <Footer/>
+
     </main>
   );
 };
