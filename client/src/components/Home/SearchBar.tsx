@@ -30,7 +30,7 @@ export default function Searchbar() {
             }
         }
         categories();
-    }, [])
+    }, []);
 
     function handleSearchByCategory(categoryName: string) {
         setSelectedCategory(categoryName);

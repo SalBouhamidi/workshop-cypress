@@ -22,8 +22,8 @@
     "types": ["cypress", "node"]
   },
   "include": ["src", "cypress"],
-  "references": [
-    { "path": "./tsconfig.app.json" },
-    { "path": "./tsconfig.node.json" }
-  ]
+  // "references": [
+  //   { "path": "./tsconfig.app.json" },
+  //   { "path": "./tsconfig.node.json" }
+  // ]
 }

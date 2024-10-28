@@ -8,6 +8,7 @@ import PrivateRoute from "@/layouts/PrivateRoute";
 import Profile from "@/pages/Profile";
 import PublicRoute from "@/layouts/PublicRoute";
 import Home from "@/pages/Home";
+import Panier from "@/pages/panier";
 
 const AppRouter = createBrowserRouter([
   {
@@ -28,10 +29,6 @@ const AppRouter = createBrowserRouter([
         element: <PublicRoute />,
         children: [
           {
-            path: "/",
-            element: <Home />,
-          },
-          {
             path: "/login",
             element: <LogIn />,
           },
@@ -49,6 +46,15 @@ const AppRouter = createBrowserRouter([
           },
         ],
       },
+      {
+        path: "/",
+        element: <Home />,
+      },
+      {
+        path: "/card",
+        element: <Panier/>,
+      },
+      
     ],
   },
   {

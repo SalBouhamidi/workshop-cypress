@@ -14,6 +14,7 @@ const restaurantSchema = new Schema({
     ref: "User",
     required: true,
   },
+  isAccepted:{type: Boolean, default: false },
   createdAt: { type: Date, default: Date.now },
 });
 
