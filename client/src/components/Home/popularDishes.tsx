@@ -34,6 +34,7 @@ export default function PopularDishes() {
                 localStorage.setItem('cart', JSON.stringify(cart)); 
                 toast.success(`${dish.name} has been added to cart!`)
             };
+            
     return (
         <>
             <section className="popular-dishes-section fix section-padding pt-0">
