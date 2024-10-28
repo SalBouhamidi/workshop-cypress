@@ -21,7 +21,7 @@ router.get("/:restaurantId/:itemName", ShowMenuItem); // Display menu item by re
 router.post("/store-menu", StoreMenu); // Create a new menu
 // , authMiddleware, managerMiddleware
 router.put(
-  "/:restaurantId/update-menu",
+  "/update-menu/:itemId",
   // authMiddleware,
   // managerMiddleware,
   UpdateMenu

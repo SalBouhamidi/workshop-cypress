@@ -4,6 +4,7 @@ import * as Yup from 'yup';
 import { ToastContainer, toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import imageCompression from 'browser-image-compression';
+import { error } from 'console';
 
 interface Image {
     data: string;
@@ -35,20 +36,7 @@ interface Menu {
 }
 
 // Validation Schema
-const storeValidationSchema = Yup.object().shape({
-    restaurantId: Yup.string().required('Restaurant is required'),
-    name: Yup.string().required('Name is required'),
-    description: Yup.string().required('Description is required'),
-    price: Yup.number().required('Price is required').positive('Price must be positive'),
-    available: Yup.boolean().required('Availability is required'),
-    images: Yup.array()
-        .of(Yup.object().shape({ data: Yup.string().required('Image is required') }))
-        .min(1, 'At least one image is required')
-        .max(5, 'You can upload up to 5 images only')
-        .required('Images are required'),
-});
-const updateValidationSchema = Yup.object().shape({
-    menuId: Yup.string().required('Menu ID is required'),
+const validationSchema = Yup.object().shape({
     restaurantId: Yup.string().required('Restaurant is required'),
     name: Yup.string().required('Name is required'),
     description: Yup.string().required('Description is required'),
@@ -63,8 +51,15 @@ const updateValidationSchema = Yup.object().shape({
 
 const Menu = () => {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-    const [editItem, setEditItem] = useState<MenuItem | null>(null);
+    const [isUpdateModalOpen, setUpdateModalOpen] = useState(false);
+    const [itemToUpdate, setItemToUpdate] = useState({
+        restaurantId: '',
+        name: '',
+        available: false,
+        price: 0,
+        description: '',
+        images: [],
+    });
     const [isAllChecked, setIsAllChecked] = useState(false);
     const [menus, setMenus] = useState<Menu[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
@@ -92,14 +87,6 @@ const Menu = () => {
         setIsCreateModalOpen(!isCreateModalOpen);
     };
 
-    const toggleEditModal = () => {
-        setIsEditModalOpen(!isEditModalOpen);
-        if (isEditModalOpen) {
-            resetForm();
-            setEditItem(null);
-        }
-    };
-
     const handleSelectAll = (e: React.ChangeEvent<HTMLInputElement>) => {
         const checked = e.target.checked;
         setIsAllChecked(checked);
@@ -116,14 +103,6 @@ const Menu = () => {
             [name]: name === 'available' ? value === 'true' : name === 'price' ? parseFloat(value) : value,
         }));
     };
-    const handleEditInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
-        setEditItem((prev) => ({
-            ...prev,
-            [name]: name === 'available' ? value === 'true' : name === 'price' ? parseFloat(value) : value,
-        }));
-    };
-
     const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const { value } = e.target;
         setRestaurantId(value);
@@ -155,7 +134,7 @@ const Menu = () => {
         const validImages = images.filter(Boolean);
 
         setNewItem((prev) => ({ ...prev, images: validImages }));
-        setEditItem((prev) => ({ ...prev, images: validImages }));
+        setItemToUpdate((prev) => ({ ...prev, images: validImages }));
     };
 
     const convertBlobToBase64 = (blob: Blob): Promise<string> => {
@@ -172,7 +151,7 @@ const Menu = () => {
         setErrors({});
 
         try {
-            await storeValidationSchema.validate({ ...newItem, restaurantId }, { abortEarly: false });
+            await validationSchema.validate({ ...newItem, restaurantId }, { abortEarly: false });
 
             const payload = {
                 restaurantId,
@@ -193,39 +172,44 @@ const Menu = () => {
         }
     };
 
-    const handleUpdateSubmit = async (e: React.FormEvent) => {
+    const handleUpdate = async (e: React.FormEvent) => {
         e.preventDefault();
         setErrors({});
 
-        const payload = {
-            menuId: editItem?._id,
-            restaurantId,
-            name: editItem.name,
-            description: editItem.description,
-            price: editItem.price,
-            available: editItem.available,
-            images: editItem.images.map((img) => img.data),
-        };
+        if (!itemToUpdate) {
+            console.log('Item to update is not defined.');
+            return;
+        }
 
-        console.log('Payload before validation:', payload);
-
+        // Validation logic
         try {
-            await updateValidationSchema.validate(payload, { abortEarly: false });
+            await validationSchema.validate({ ...itemToUpdate }, { abortEarly: false });
 
-            const response = await axios.post(`http://localhost:3000/api/menus/${restaurantId}/update-menu`, payload);
-            // alert(response.data);
+            const payload = {
+                restaurantId: itemToUpdate.restaurantId,
+                name: itemToUpdate.name,
+                description: itemToUpdate.description,
+                price: itemToUpdate.price,
+                available: itemToUpdate.available,
+                images: itemToUpdate.images.map((img) => img.data),
+            };
 
-            if (response.status === 200) {
-                toast.success('Menu item updated successfully!');
-                fetchMenus();
-            } else {
-                toast.error('Failed to update menu item.');
-            }
+            const response = await axios.put(`http://localhost:3000/api/menus/update-menu/${itemToUpdate._id}`, payload);
+            console.log(response.data.message);
+            setUpdateModalOpen(false);
+            toast.success('Item updated successfully!');
+            fetchMenus();
         } catch (error) {
-            handleValidationError(error);
-            toast.error('Failed to update menu item.');
+            if (error.name === 'ValidationError') {
+                // Handle validation errors
+                handleValidationError(error);
+            } else {
+                console.error('Error updating item:', error.response?.data || error);
+                toast.error('Failed to update item.');
+            }
         }
     };
+
     const handleDelete = async () => {
         if (!itemToDelete) {
             console.log('Item to delete is not defined.');
@@ -241,20 +225,6 @@ const Menu = () => {
             console.error('Error deleting menu:', error.response?.data || error);
             toast.error('Failed to delete menu item.');
         }
-    };
-
-    const toggleEditModalWithItem = (menuIndex: number, itemIndex: number, item: MenuItem) => {
-        console.log('Editing item:', item);
-        setEditItem(item);
-        setNewItem({
-            name: item.name,
-            available: item.available,
-            price: item.price,
-            restaurantId: item.restaurantId,
-            description: item.description,
-            images: item.images || [],
-        });
-        setIsEditModalOpen(true);
     };
 
     const handleValidationError = (error) => {
@@ -470,7 +440,10 @@ const Menu = () => {
                                                                 </li>
                                                                 <li>
                                                                     <button
-                                                                        onClick={() => toggleEditModalWithItem(menuIndex, itemIndex, item)}
+                                                                        onClick={() => {
+                                                                            setItemToUpdate(item);
+                                                                            setUpdateModalOpen(true);
+                                                                        }}
                                                                         className="block py-2 px-4 w-full text-left hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white"
                                                                     >
                                                                         Edit
@@ -685,16 +658,22 @@ const Menu = () => {
                 </div>
             )}
             {/* edit modal */}
-            {isEditModalOpen && editItem && (
-                <div id="editModal" tabIndex="-1" aria-hidden="true" className="fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-gray-900 bg-opacity-50 backdrop-blur-sm">
-                    <div className="relative p-4 w-full max-w-2xl h-full md:h-auto">
+            {isUpdateModalOpen && (
+                <div
+                    id="editModal"
+                    onClick={() => setUpdateModalOpen(false)}
+                    tabIndex="-1"
+                    aria-hidden="true"
+                    className="fixed inset-0 z-50 flex items-center justify-center w-full h-full bg-gray-900 bg-opacity-50 backdrop-blur-sm"
+                >
+                    <div className="relative p-4 w-full max-w-2xl h-full md:h-auto" onClick={(e) => e.stopPropagation()}>
                         <div className="relative p-4 bg-white rounded-lg shadow dark:bg-gray-800 sm:p-5">
                             <div className="flex justify-between items-center pb-4 mb-4 rounded-t border-b sm:mb-5 dark:border-gray-600">
                                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Edit menu</h3>
                                 <button
                                     type="button"
                                     className="text-gray-400 bg-transparent hover:bg-gray-200 hover:text-gray-900 rounded-lg text-sm p-1.5 ml-auto inline-flex items-center dark:hover:bg-gray-600 dark:hover:text-white"
-                                    onClick={toggleEditModal}
+                                    onClick={() => setUpdateModalOpen(false)}
                                 >
                                     <svg aria-hidden="true" className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg">
                                         <path
@@ -706,8 +685,7 @@ const Menu = () => {
                                     <span className="sr-only">Close modal</span>
                                 </button>
                             </div>
-                            <form onSubmit={handleUpdateSubmit} encType="multipart/form-data">
-                                <input type="hidden" name="menuId" value={editItem._id} />
+                            <form onSubmit={handleUpdate} encType="multipart/form-data">
                                 <div className="grid gap-4 mb-4 sm:grid-cols-2">
                                     <div>
                                         <label htmlFor="name" className="block mb-2 text-sm font-medium text-gray-900 dark:text-white">
@@ -719,8 +697,8 @@ const Menu = () => {
                                             id="name"
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                             placeholder="Type menu item name"
-                                            value={editItem.name}
-                                            onChange={handleEditInputChange}
+                                            value={itemToUpdate?.name || ''}
+                                            onChange={(e) => setItemToUpdate({ ...itemToUpdate, name: e.target.value })}
                                             required
                                         />
                                         {errors.name && <p className="text-red-600 text-sm mt-1 ml-0.5">{errors.name.message}</p>}
@@ -732,8 +710,8 @@ const Menu = () => {
                                         <select
                                             id="available"
                                             name="available"
-                                            onChange={handleEditInputChange}
-                                            value={editItem.available.toString()}
+                                            value={itemToUpdate?.available ? 'true' : 'false'}
+                                            onChange={(e) => setItemToUpdate({ ...itemToUpdate, available: e.target.value === 'true' })}
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         >
                                             <option value={false}>Not Available</option>
@@ -750,8 +728,8 @@ const Menu = () => {
                                             id="price"
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-600 focus:border-primary-600 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                             placeholder="$29"
-                                            value={editItem.price}
-                                            onChange={handleEditInputChange}
+                                            value={itemToUpdate?.price || ''}
+                                            onChange={(e) => setItemToUpdate({ ...itemToUpdate, price: e.target.value })}
                                             required
                                         />
                                     </div>
@@ -762,8 +740,8 @@ const Menu = () => {
                                         <select
                                             id="restaurant"
                                             name="restaurantId"
-                                            value={restaurantId}
-                                            onChange={handleSelectChange}
+                                            value={itemToUpdate?.restaurantId || ''}
+                                            onChange={(e) => setItemToUpdate({ ...itemToUpdate, restaurantId: e.target.value })}
                                             className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-primary-500 focus:border-primary-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                         >
                                             <option value="">Select restaurant</option>
@@ -784,8 +762,8 @@ const Menu = () => {
                                             rows="4"
                                             className="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-primary-500 dark:focus:border-primary-500"
                                             placeholder="Write menu item description here"
-                                            value={editItem.description}
-                                            onChange={handleEditInputChange}
+                                            value={itemToUpdate?.description || ''}
+                                            onChange={(e) => setItemToUpdate({ ...itemToUpdate, description: e.target.value })}
                                             required
                                         ></textarea>
                                     </div>

@@ -222,11 +222,13 @@ const StoreMenu = async (req, res) => {
 // update menu
 const UpdateMenu = async (req, res) => {
   try {
-    const { restaurantId } = req.params;
-    const { menuId, name, description, price, available, images } = req.body;
-    // console.log("Received body:", req.body);
-    console.log("Images:", req.body.images);
-    // Validate input
+    const { itemId } = req.params;
+    const { restaurantId, name, description, price, available, images } =
+      req.body;
+
+    // console.log("Request Body:", req.body);
+    // console.log("Restaurant ID:", restaurantId);
+
     const { error } = validateUpdateMenu(req.body);
     if (error) {
       return res
@@ -234,24 +236,22 @@ const UpdateMenu = async (req, res) => {
         .json({ message: "Validation error", details: error.details });
     }
 
-    // Validate that `restaurantId` is a valid MongoDB ObjectId
-    if (!mongoose.Types.ObjectId.isValid(restaurantId)) {
-      return res.status(400).json({ message: "Invalid restaurant ID." });
+    let restaurant;
+    if (mongoose.Types.ObjectId.isValid(restaurantId)) {
+      restaurant = await Restaurant.findById(restaurantId);
+    } else {
+      restaurant = await Restaurant.findOne({ name: restaurantId });
     }
 
-    // Check if the restaurant exists
-    let restaurant = await Restaurant.findById(restaurantId);
     if (!restaurant) {
       return res.status(404).json({ message: "Restaurant not found." });
     }
 
-    // Process images
     let imageUrls = [];
     if (images && images.length > 0) {
       imageUrls = await Promise.all(images.map(uploadImage));
     }
 
-    // Find the menu item associated with the restaurant and update it
     const menu = await Menu.findOne({ restaurantId: restaurant._id });
     if (!menu) {
       return res
@@ -259,15 +259,13 @@ const UpdateMenu = async (req, res) => {
         .json({ message: "Menu not found for this restaurant." });
     }
 
-    // Find the specific item to update by menuId
     const itemIndex = menu.items.findIndex(
-      (item) => item._id.toString() === menuId
+      (item) => item._id.toString() === itemId
     );
     if (itemIndex === -1) {
       return res.status(404).json({ message: "Menu item not found." });
     }
 
-    // Update the item
     menu.items[itemIndex] = {
       ...menu.items[itemIndex],
       name,
@@ -277,10 +275,12 @@ const UpdateMenu = async (req, res) => {
       images: imageUrls.length > 0 ? imageUrls : menu.items[itemIndex].images,
     };
 
+    // Save the updated menu
     const savedMenu = await menu.save();
-    res
-      .status(200)
-      .json({ message: "Menu updated successfully", updatedMenu: savedMenu });
+    res.status(200).json({
+      message: "Menu updated successfully",
+      updatedMenu: savedMenu,
+    });
   } catch (error) {
     console.error("Error updating menu:", error);
     res.status(500).json({ message: "Internal server error." });

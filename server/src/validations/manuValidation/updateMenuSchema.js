@@ -6,10 +6,6 @@ const menuSchema = Joi.object({
     "string.empty": "Restaurant ID is required.",
     "any.required": "Restaurant ID is required.",
   }),
-  menuId: Joi.string().required().messages({
-    "string.empty": "Menu ID is required.",
-    "any.required": "Menu ID is required.",
-  }),
   name: Joi.string().required().messages({
     "string.empty": "Name is required.",
     "any.required": "Name is required.",
