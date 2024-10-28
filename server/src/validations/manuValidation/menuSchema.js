@@ -35,6 +35,6 @@ const menuSchema = Joi.object({
 });
 
 // Validate function
-export const validateStoreMenu = (data) => {
+export const validateMenu = (data) => {
   return menuSchema.validate(data, { abortEarly: false });
 };

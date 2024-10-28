@@ -14,23 +14,23 @@ const router = express.Router();
 
 // Public Routes (Accessible without authentication)
 router.get("/", Menus); // Display all menus
-router.get("/:restaurantName/menu", ShowMenu); // Display menu by restaurant
-router.get("/:restaurantName/:itemName", ShowMenuItem); // Display menu item by restaurant
+router.get("/:restaurantId/menu", ShowMenu); // Display menu by restaurant
+router.get("/:restaurantId/:itemName", ShowMenuItem); // Display menu item by restaurant
 
 // Protected Routes (Only Managers can access)
 router.post("/store-menu", StoreMenu); // Create a new menu
 // , authMiddleware, managerMiddleware
-router.post(
-  "/:restaurantName/update-menu",
-  authMiddleware,
-  managerMiddleware,
+router.put(
+  "/update-menu/:itemId",
+  // authMiddleware,
+  // managerMiddleware,
   UpdateMenu
 ); // Update a menu
 
-router.post(
-  "/:restaurantName/delete-menu",
-  authMiddleware,
-  managerMiddleware,
+router.delete(
+  "/delete-menu/:itemId",
+  // authMiddleware,
+  // managerMiddleware,
   DeleteMenu
 ); // Delete a menu
 
