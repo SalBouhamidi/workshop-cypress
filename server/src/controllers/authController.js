@@ -6,7 +6,7 @@ import { sendOTPByEmail } from "../utils/sendOTP.js";
 import "dotenv/config";
 
 const signUp = async (req, res) => {
-  const { email, password } = req.body;
+  const { email, password, roleId } = req.body;
 
   try {
     const user = await User.findOne({ email });
