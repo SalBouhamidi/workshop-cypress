@@ -12,7 +12,7 @@ export default function Searchbar() {
     const usedCategoriesRef = useRef([]);
     const [selectedCategory, setSelectedCategory] = useState('');
     const [selectedRestau, setSelectedRestau] = useState('');
-    const [searchResult, setSearchResult] = useState(null);
+    const [searchResult, setSearchResult] = useState([]);
 
 
 
@@ -43,7 +43,6 @@ export default function Searchbar() {
             if (selectedCategory !== '' && selectedRestau !== '') {
                 try {
                     const result = await axios.get(`http://localhost:3000/api/search?category=${encodeURIComponent(selectedCategory)}&name=${encodeURIComponent(selectedRestau)}`);
-                    // console.log(result.data);
                     if (result.data && Object.keys(result.data).length > 0) {
                         setSearchResult(result.data);
                     } else {
@@ -51,7 +50,7 @@ export default function Searchbar() {
                     }
                 } catch (error) {
                     toast.error(error.response.data.message)
-                    console.log(error.response.data.message);
+                    console.log('thereeeeeee is an error',error.response.data.message);
                     setSearchResult(null);
                 }
 
@@ -67,7 +66,7 @@ export default function Searchbar() {
                     }
 
                 } catch (err) {
-                    toast.error(err.response.data)
+                    toast.error('Ops the category has no restaurant ')
                     console.log(err.response.data);
                     setSearchResult(null);
                 }
@@ -122,7 +121,7 @@ export default function Searchbar() {
                                     <ul className="py-2 text-sm text-gray-700 dark:text-gray-200" aria-labelledby="dropdown-button">
                                         {usedCategoriesRef.current.map((Category) => (
                                             <li key={Category._id}>
-                                                <button onClick={() => handleSearchByCategory(Category.name)} type="button" className="inline-flex w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
+                                                <button onClick={() => handleSearchByCategory(Category.name)} key={Category._id} type="button" className="inline-flex w-full px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white">
                                                     {Category.name}
                                                 </button>
                                             </li>

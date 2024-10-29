@@ -79,7 +79,7 @@ export const currentUser = createAsyncThunk(
     try {
       const response = await api.get("/auth/current-user");
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       localStorage.removeItem("token");
       return rejectWithValue(error.response.data);
     }
@@ -96,7 +96,7 @@ export const verifyOtp = createAsyncThunk(
         { otp: verifyOTPData.otp }
       );
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.response.data);
     }
   }
@@ -112,7 +112,7 @@ export const toggleTwoStepVerification = createAsyncThunk(
       });
       console.log("response", response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.response.data);
     }
   }
@@ -126,7 +126,7 @@ export const reSendOTP = createAsyncThunk(
       const response = await api.get(`/auth//resend-otp/${userId}`);
       console.log("response", response.data);
       return response.data;
-    } catch (error) {
+    } catch (error: any) {
       return rejectWithValue(error.response.data);
     }
   }
