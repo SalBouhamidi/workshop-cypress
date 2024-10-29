@@ -9,6 +9,7 @@ import Profile from "@/pages/Profile";
 import PublicRoute from "@/layouts/PublicRoute";
 import Home from "@/pages/Home";
 import Panier from "@/pages/panier";
+import Menu from "@/pages/Menu"
 
 const AppRouter = createBrowserRouter([
   {
@@ -54,6 +55,10 @@ const AppRouter = createBrowserRouter([
         path: "/card",
         element: <Panier/>,
       },
+      {
+        path: "/menu/:restaurantId",
+        element: <Menu/>
+      }
       
     ],
   },

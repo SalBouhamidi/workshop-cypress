@@ -80,6 +80,34 @@ class restaurantController {
 
   }
 }
+async fetchRestaurants(req, res){
+  try{
+    let results = await Menu.aggregate([
+      {
+        $lookup:{
+          from: "restaurants",
+          localField: 'restaurantId',
+          foreignField: '_id',
+          as: "restaurantDetails"
+        }
+      }
+    ]);
+    return res.status(200).json(results)
+  }catch(e){
+    return res.json({message: "there's an error", e})
+  }
+}
+async GetMenu(req, res){
+  const { restaurantId } = req.params;
+  try {
+    const dishes = await Menu.find({restaurantId:restaurantId }); 
+    res.status(200).json(dishes);
+} catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+}
+} 
+
 }
 
 

@@ -8,7 +8,7 @@ const restaurantSchema = new Schema({
     address: { type: String, required: true },
   },
   categoryIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "Category" }],
-  menuId: { type: mongoose.Schema.Types.ObjectId, ref: "Menu", default: null },
+  // menuId: { type: mongoose.Schema.Types.ObjectId, ref: "Menu", default: null },
   managerId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: "User",
