@@ -13,14 +13,13 @@ import axios from "axios";
 import {toast} from "sonner"
 
 export default function PopularDishes() {
-    const [menu, setMenu] = useState<any[]>([]);
+    const [menu, setMenu] = useState([]);
 
     useEffect(() => {
         async function getDishes(restaurantId: string) {
             try {
                 const result = await axios.get(`http://localhost:3000/api/restaurant/${restaurantId}`);
                 setMenu(result.data.menu[0].items)
-                // console.log('heeeeeeeeeeeeere',menu);
             } catch (e) {
                 console.log('something bad happend', e);
             }
@@ -30,11 +29,17 @@ export default function PopularDishes() {
 
             const addToCart = (dish) => {
                 const cart = JSON.parse(localStorage.getItem('cart')) || [];
-                cart.push(dish);
-                localStorage.setItem('cart', JSON.stringify(cart)); 
-                toast.success(`${dish.name} has been added to cart!`)
+                const isDishInCart = cart.some(item => item.name === dish.name);
+                if (!isDishInCart) {
+                    dish.quantity = 1;
+                    cart.push(dish);
+                    localStorage.setItem('cart', JSON.stringify(cart));
+                    toast.success(`${dish.name} has been added to cart!`);
+                } else {
+                    toast.info(`${dish.name} is already in the cart!`);
+                }
             };
-            
+
     return (
         <>
             <section className="popular-dishes-section fix section-padding pt-0">
@@ -56,8 +61,8 @@ export default function PopularDishes() {
                                     </h2>
                                 </div>
                                 <div className="dishes-card-wrap style1 mb-60">
-                                    {menu.length > 0  && menu.map((Dishe) =>(
-                                        <div className="dishes-card style2 wow fadeInUp" data-wow-delay="0.2s">
+                                    {menu.length > 0  && menu.map((Dishe, index) =>(
+                                        <div key={index} className="dishes-card style2 wow fadeInUp" data-wow-delay="0.2s">
                                             <div className="dishes-thumb flex !justify-center !items-center">
                                                 <img src={dishes2_1} alt="thumb" />
                                                 <div className="circle-shape flex !justify-center !items-center"><img className="cir36"

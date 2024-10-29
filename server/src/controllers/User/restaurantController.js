@@ -28,32 +28,35 @@ class restaurantController {
   }
 
   async search(req, res) {
-    const { name, category } = req.query;
-    console.log(req.query);
-    const query = {};
-    if(name){
-        query.name = { $regex: name, $options: 'i' };
-    }
-    if (category) {
-      const selectedcategory = await Category.findOne({name:category});
-      if (selectedcategory) {
-        query.categoryIds = selectedcategory._id;        
+    try{
+      const { name, category } = req.query;
+      console.log(req.query);
+      const query = {};
+      if(name){
+          query.name = { $regex: name, $options: 'i' };
       }
-    }
-    const restaurants = await Restaurant.find(query);
-    if (restaurants.length > 0) {
-      return res.status(200).json(restaurants);
-    } else {
-      return res.status(404).json({ message: "There's no restaurants available under your specific requirement" });
-    }
-
-  } catch(error) {
+      if (category) {
+        const selectedcategory = await Category.findOne({name:category});
+        if (selectedcategory) {
+          query.categoryIds = selectedcategory._id;        
+        }
+      }
+      const restaurants = await Restaurant.find(query);
+      if (restaurants.length > 0) {
+        return res.status(200).json(restaurants);
+      } else {
+        return res.status(404).json({ message: "There's no restaurants available under your specific requirement" });
+      }
+    }catch(error) {
     console.error(error);
     res.status(500).json({ error: 'smth bad happend' });
   }
+}
 
 
   async Order(req, res){
+    console.log("Request Body:", req.body);
+
     const { clientId, restaurantId, items, totalPrice, status } = req.body;
 
     try {
