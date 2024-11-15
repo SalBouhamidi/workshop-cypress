@@ -23,7 +23,7 @@ export default function SomeOrders() {
             }
         }
         GetRestaurant()
-    }, [restaurant])
+    }, [])
     return (
         <>
             <div className="offer-section fix  mt-5">

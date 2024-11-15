@@ -76,16 +76,16 @@ const NavBar = () => {
                         <span>Card</span>
                       </Button>
                     </Link>
-                    <Link to={"/login"} className="cursor-pointer">
+                    <Link to={"/login"} data-cy="login" className="cursor-pointer">
                       <Button variant="ghost" className="text-red-500 hover:bg-red-600 hover:text-red-50">
                         <LogIn className="mr-2 h-4 w-4 " />
                         <span > Log in</span>
                       </Button>
                     </Link>
-                    <Link to={"/signup"} className="cursor-pointer">
+                    <Link to={"/signup"} data-cy="signup" className="cursor-pointer">
                       <Button className="bg-red-600 text-red-50 hover:bg-red-50 hover:text-red-500">
                         <UserPlus className="mr-2 h-4 w-4" />
-                        Sign Up
+                        <span> Sign Up</span>
                       </Button>
                     </Link>
 

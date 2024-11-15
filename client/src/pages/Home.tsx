@@ -11,7 +11,7 @@ const Home = () => {
     <>
     <Herosection/>
     <Searchbar/>
-    <SomeOrders/>
+    {/* <SomeOrders/> */}
     <AboutUs/>
     <PopularDishes/>
     <CallToAction />
